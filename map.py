@@ -37,14 +37,22 @@ def calculate_poincare_section(starts, niter, mapping=standard_nontwist, **kwarg
     Calculate a Poincar\'e section of a mapping with parameters a and b.
     Iterate niter times.
     """
+    # use lambda to "roll-in" the mapping kwargs
     fastmap = lambda xx: mapping(xx, **kwargs)
+    # use vmap to create a function from all starts to all mapped points
     applymap = jit(vmap(fastmap, in_axes=0))
+    # initialize results array
     iterations = [starts, ]
+    # calculate mapping of previous mappings niter times
     for _ in range(niter):
         iterations.append(applymap(iterations[-1]))
+    # stack into a nice array for returing. 
     return np.stack(iterations, axis=-1)
 
 def plot_save_points(points, name='fig', colors='random'):
+    """
+    save a plot of the 'points' 
+    """
     plt.clf()
     fig, ax = plt.subplots(figsize=(12, 6))
     if colors== 'random':
@@ -57,6 +65,9 @@ def plot_save_points(points, name='fig', colors='random'):
     fig.savefig(name, bbox_inches='tight', dpi=300)
 
 def starts_nontwist(norbits_per_leg):
+    """
+    hacky function to create a bunch of starting points
+    """
     x = np.linspace(0, 0.5, norbits_per_leg)
     y = np.linspace(-1, 1., norbits_per_leg)
     starts1 = np.stack([x,y], axis=1)
@@ -70,8 +81,24 @@ def starts_nontwist(norbits_per_leg):
     starts = np.append(starts, starts3, axis=0)
     return starts
 
+def mapping_vector(xx, mapping, **kwargs):
+    """
+    returns the vector from point xx to where the map
+    brings iterations
+    """
+
+def isotrope(xx, mapping_vector_fun): 
+    """
+    calculate the isotrope
+
+    re-write so this monster is readable and understandable
+    UNTESTED
+    """
+    return jacfwd(mapping_vector_fun)*(np.array([[0,1],[-1,0]]))
 
 
+
+#remove script and put in different file
 starts = starts_nontwist(200)
 points = calculate_poincare_section(starts, 10000, mapping=tokamap, K=0.01, w=1., w0 = 0.99, w1 = 0.9)
 
