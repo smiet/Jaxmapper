@@ -2,6 +2,7 @@ from jax import numpy as np
 from jax import jit, grad, jacfwd, vmap, jacobian
 from jax.tree_util import Partial
 from jax import config
+import sympy as sym
 config.update("jax_enable_x64", True)
 
 from matplotlib import pyplot as plt
@@ -137,14 +138,31 @@ def linear_starting_points(xy_start = tuple, xy_end = tuple, npoints = int):
     starts = np.stack([x_array,y_array], axis=1)
     return starts
 
-def step(Nmap,xx): #TODO
+def step_NM(xx, map, method='jax', **kwargs): #TODO rewrite as functional transformation (takes only xx and kwargs as input)
     """
-    Takes as input a function Nmap (that is the map applied N times). 
+    Takes as input a function map. 
     Then from fN calculates that matrix and takes a Newton step.
     """
-    pass
+    # use lambda to "roll-in" the mapping kwargs
+    fastmap = lambda xx: map(xx, **kwargs)
+    if method=='jax':
+        M = jacfwd(fastmap)(xx)
+        A = M - np.eye(2)
+        f = fastmap(xx)
+        b = xx-f
+        delta = np.linalg.solve(A,b)
+        return delta
+    elif method=='sympy':
+        M = sym_jac_func(map)(xx) #TODO fix sym_jac_func (look at note there)
+        A = M - np.eye(2)
+        f = map(xx)
+        b = xx-f
+        delta = np.linalg.solve(A,b)
+        return delta
+    else:
+        print("Invalid method!")
 
-def mapping_vector(map): #TODO
+def mapping_vector(map): #TOCHECK
     """
     Returns a function which calculates the difference between point xx and the mapping of xx.
     """
@@ -163,14 +181,39 @@ def isotrope(xx, mapping_vector_fun): #TODO
     """
     return jacfwd(mapping_vector_fun)*(np.array([[0,1],[-1,0]]))
 
+def symbolic_nmap(func, N):
+    """
+    Takes a Sympy expression as input and outputs a Sympy expression which is the N-map.
+    IMPT: func must only have 2 Sympy symbols - x and y. 
+    """
+    x, y, z = sym.symbols('x y z')
+    iter = func
+    for _ in range(N-1):
+        old_x = iter[0]
+        old_y = iter[1]
+        iter = iter.subs(y, z)
+        iter = iter.subs(x, old_x)
+        iter = iter.subs(z, old_y)
+    return iter
 
+def sym_jac_func(func): #TODO num_jac takes 2 separate inputs. find a way to change to 1 input which is an array of 2 points
+    """
+    Takes a Sympy expression as input and outputs a Python function which evaluates the Jacobian of func.
+    IMPT: func must only have 2 Sympy symbols - x and y.
+    The output function has 2 arguments. 1st is x-value and 2nd is y-value. 
+    """
+    x, y = sym.symbols('x y')
+    X=sym.Matrix([x,y])
+    sym_jac = func.jacobian(X)
+    num_jac = sym.lambdify([x,y], sym_jac)
+    return num_jac 
 
 #remove script and put in different file
 #starts = starts_nontwist(200)
 #starts = new_starts(xy_start=(0,0), xy_end=(1,1), x_points=10, y_points=10)
-starts = np.array([0.4, 0.4])
+starts = np.array([0.1, 0.1])
 
-
+#delta = step_NM(standard_map, starts)
 
 #points = calculate_poincare_section(starts, 10000, mapping=standard_nontwist, b=0.2, a=0.53)
 # points = calculate_poincare_section(starts, 100, mapping=standard_map, k = 0.5)
