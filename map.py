@@ -144,21 +144,15 @@ def step(Nmap,xx): #TODO
     """
     pass
 
-def mapping_vector(starts, mapping, **kwargs): #TODO
+def mapping_vector(map): #TODO
     """
-    returns the difference between point xx and the mapping of xx.
+    Returns a function which calculates the difference between point xx and the mapping of xx.
     """
-    # use lambda to "roll-in" the mapping kwargs
-    fastmap = lambda xx: mapping(xx, **kwargs)
-    # use vmap to create a function from all starts to all mapped points
-    applymap = jit(vmap(fastmap, in_axes=0))
-    # calculate mapping of start points
-    ends = applymap(starts)
-    # calculate difference between starts and ends
-    diff = np.subtract(ends, starts)
-    # returns array with shape (ij) where i indexes the point in starts and j indexes the x/y value.
-    # i is of the same length as 0th axis of starts.
-    return diff
+    def diff(start, **kwargs):
+        end = map(start, **kwargs)
+        vec = np.subtract(end,start)
+        return vec
+    return jit(diff)
 
 def isotrope(xx, mapping_vector_fun): #TODO
     """
@@ -174,7 +168,9 @@ def isotrope(xx, mapping_vector_fun): #TODO
 #remove script and put in different file
 #starts = starts_nontwist(200)
 #starts = new_starts(xy_start=(0,0), xy_end=(1,1), x_points=10, y_points=10)
-starts = np.array([0.2, 0.2])
+starts = np.array([0.4, 0.4])
+
+
 
 #points = calculate_poincare_section(starts, 10000, mapping=standard_nontwist, b=0.2, a=0.53)
 # points = calculate_poincare_section(starts, 100, mapping=standard_map, k = 0.5)
