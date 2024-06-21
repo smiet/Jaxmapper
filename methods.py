@@ -16,9 +16,9 @@ def calculate_poincare_section(starts, niter, mapping=standard_nontwist, **kwarg
     Iterate niter times.
     """
     # use lambda to "roll-in" the mapping kwargs
-    fastmap = lambda xx: mapping(xx, **kwargs)
+    rolled_map = lambda xy: mapping(xy, **kwargs)
     # use vmap to create a function from all starts to all mapped points
-    applymap = jit(vmap(fastmap, in_axes=0))
+    applymap = jit(vmap(rolled_map, in_axes=0))
     # initialize results array
     iterations = [starts, ]
     # calculate mapping of previous mappings niter times
@@ -79,25 +79,31 @@ def linear_starting_points(xy_start = tuple, xy_end = tuple, npoints = int):
     starts = np.stack([x_array,y_array], axis=1)
     return starts
 
-def step_NM(xx, map, method='jax', **kwargs): #TODO rewrite as functional transformation (takes only xx and kwargs as input)
+def step_NM(xy, map, method='jax', **kwargs): #TODO rewrite as functional transformation (takes only xy and kwargs as input)
     """
     Takes as input a function map. 
     Then from fN calculates that matrix and takes a Newton step.
+    Ensure that the method chosen is appropriate for the map (i.e. if method=sympy then map must be a Sympy map)!
     """
-    # use lambda to "roll-in" the mapping kwargs
-    fastmap = lambda xx: map(xx, **kwargs)
     if method=='jax':
-        M = jacfwd(fastmap)(xx)
+        # use lambda to "roll-in" the mapping kwargs
+        rolled_map = lambda xy: map(xy, **kwargs)
+        M = jacfwd(rolled_map)(xy)
         A = M - np.eye(2)
-        f = fastmap(xx)
-        b = xx-f
+        f = rolled_map(xy)
+        b = xy-f
         delta = np.linalg.solve(A,b)
         return delta
     elif method=='sympy':
-        M = sym_jac_func(map)(xx) #TODO fix sym_jac_func (look at note there)
+        x, y = sym.symbols('x y')
+        sym_expr = map(**kwargs)
+        M = sym_jac_func(sym_expr)(xy)
         A = M - np.eye(2)
-        f = map(xx)
-        b = xx-f
+        f = sym.lambdify([x,y], sym_expr, 'numpy')(xy[0], xy[1])
+        # the f above is a (ij) array where i is the x/y-value and j is a redudant axis of length 1.
+        # so we flatten f.
+        f = f.flatten()
+        b = xy-f
         delta = np.linalg.solve(A,b)
         return delta
     else:
@@ -105,7 +111,7 @@ def step_NM(xx, map, method='jax', **kwargs): #TODO rewrite as functional transf
 
 def mapping_vector(map): #TOCHECK
     """
-    Returns a function which calculates the difference between point xx and the mapping of xx.
+    Returns a function which calculates the difference between point xy and the mapping of xy.
     """
     def diff(start, **kwargs):
         end = map(start, **kwargs)
@@ -113,7 +119,7 @@ def mapping_vector(map): #TOCHECK
         return vec
     return jit(diff)
 
-def isotrope(xx, mapping_vector_fun): #TODO
+def isotrope(xy, mapping_vector_fun): #TODO
     """
     calculate the isotrope
 
