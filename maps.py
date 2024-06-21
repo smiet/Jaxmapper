@@ -34,7 +34,7 @@ def tokamap(xy, K=0, w=0.666, w0=0.7, w1=0.3):
     return np.array([theta,psi])
 
 @jit
-def standard_map(xy, k = 0.1):
+def standard_map(xy, k):
     """
     Definition of the Chirikov Standard Map. Takes in an xy coordinate and a k-value.
     x and p coordinates are normalised and modulo 1.
@@ -57,13 +57,15 @@ def sym_standard_map(k):
     F = sym.Matrix([x + y + (k/(2*np.pi))*sym.sin(2*np.pi*x) + 0.5, y + (k/(2*np.pi))*sym.sin(2*np.pi*x)])
     return F
 
-def Nmap(map, N=int):
+def Nmap(map, N=int, **kwargs):
     """
     Takes in a function and an integer N. Outputs a function which is the map applied N times.
     """
+    # use lambda to "roll-in" the mapping kwargs
+    rolled_map = lambda xy: map(xy, **kwargs)
     def nmap(x, **kwargs):
         for _ in range(N):
-            x = map(x, **kwargs)
+            x = rolled_map(x)
         return x
     return jit(nmap)
 

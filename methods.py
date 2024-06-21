@@ -79,33 +79,37 @@ def linear_starting_points(xy_start = tuple, xy_end = tuple, npoints = int):
     starts = np.stack([x_array,y_array], axis=1)
     return starts
 
-def step_NM(xy, map, method='jax', **kwargs): #TODO rewrite as functional transformation (takes only xy and kwargs as input)
+def step_NM(map, method='jax'):
     """
-    Takes as input a function map. 
-    Then from fN calculates that matrix and takes a Newton step.
+    Takes as input a map and a method. 
+    Outputs a function step which takes in xy and **kwargs of map, and outputs a Newton step for xy towards a fixed point.
     Ensure that the method chosen is appropriate for the map (i.e. if method=sympy then map must be a Sympy map)!
     """
     if method=='jax':
-        # use lambda to "roll-in" the mapping kwargs
-        rolled_map = lambda xy: map(xy, **kwargs)
-        M = jacfwd(rolled_map)(xy)
-        A = M - np.eye(2)
-        f = rolled_map(xy)
-        b = xy-f
-        delta = np.linalg.solve(A,b)
-        return delta
+        def step(xy, **kwargs):
+            # use lambda to "roll-in" the mapping kwargs
+            rolled_map = lambda xy: map(xy, **kwargs)
+            M = jacfwd(rolled_map)(xy)
+            A = M - np.eye(2)
+            f = rolled_map(xy)
+            b = xy-f
+            delta = np.linalg.solve(A,b)
+            return delta
+        return jit(step)
     elif method=='sympy':
-        x, y = sym.symbols('x y')
-        sym_expr = map(**kwargs)
-        M = sym_jac_func(sym_expr)(xy)
-        A = M - np.eye(2)
-        f = sym.lambdify([x,y], sym_expr, 'numpy')(xy[0], xy[1])
-        # the f above is a (ij) array where i is the x/y-value and j is a redudant axis of length 1.
-        # so we flatten f.
-        f = f.flatten()
-        b = xy-f
-        delta = np.linalg.solve(A,b)
-        return delta
+        def step(xy, **kwargs):
+            x, y = sym.symbols('x y')
+            sym_expr = map(**kwargs)
+            M = sym_jac_func(sym_expr)(xy)
+            A = M - np.eye(2)
+            f = sym.lambdify([x,y], sym_expr, 'numpy')(xy[0], xy[1])
+            # the f above is a (ij) array where i is the x/y-value and j is a redudant axis of length 1.
+            # so we flatten f.
+            f = f.flatten()
+            b = xy-f
+            delta = np.linalg.solve(A,b)
+            return delta
+        return jit(step)
     else:
         print("Invalid method!")
 
