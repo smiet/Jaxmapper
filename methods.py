@@ -14,6 +14,8 @@ def calculate_poincare_section(starts, niter, mapping=standard_nontwist, **kwarg
     """
     Calculate a Poincare section of a mapping with parameters a and b.
     Iterate niter times.
+    Returns an array of shape (ijk) where i indexes the point in starts, j indexes the x/y value, 
+    and k indexes the iteration number (0 is the original point before any mappings).    
     """
     # use lambda to "roll-in" the mapping kwargs
     rolled_map = lambda xy: mapping(xy, **kwargs)
@@ -25,9 +27,6 @@ def calculate_poincare_section(starts, niter, mapping=standard_nontwist, **kwarg
     for _ in range(niter):
         iterations.append(applymap(iterations[-1]))
     # stack into a nice array for returning. 
-    # array has shape (ijk) where i indexes the point in starts,
-    # j indexes the x/y value,
-    # k indexes the iteration number (0 is the original point before any mappings)
     return np.stack(iterations, axis=-1)
 
 def starts_nontwist(norbits_per_leg):
@@ -50,6 +49,8 @@ def starts_nontwist(norbits_per_leg):
 def new_starts(xy_start = tuple, xy_end = tuple, x_points = int, y_points = int):
     """
     Creates a grid of starting points determined by given points which are taken as corners of the grid.
+    Returns an array of shape (ij) where i is the i-th point in the grid and j is the x/y-value.
+    Length of i is x_points*y_points.
     """
     x_start = xy_start[0]
     y_start = xy_start[1]
@@ -65,6 +66,8 @@ def new_starts(xy_start = tuple, xy_end = tuple, x_points = int, y_points = int)
 def linear_starting_points(xy_start = tuple, xy_end = tuple, npoints = int):
     """
     Creates a bunch of starting points along a line determined by a given start and end point.
+    Returns an array with shape (ij) where i is the i-th point in the line and j is the x/y-value.
+    Length of i is npoints.
     """
     x_start, y_start = xy_start
     x_end, y_end = xy_end
@@ -82,11 +85,14 @@ def linear_starting_points(xy_start = tuple, xy_end = tuple, npoints = int):
 def step_NM(map, method='jax'):
     """
     Takes as input a map and a method. 
-    Outputs a function step which takes in xy and **kwargs of map, and outputs a Newton step for xy towards a fixed point.
+    Outputs a function 'step' which takes in xy and **kwargs of map, and outputs a Newton step for xy towards a fixed point.
     Ensure that the method chosen is appropriate for the map (i.e. if method=sympy then map must be a Sympy map)!
     """
     if method=='jax':
         def step(xy, **kwargs):
+            """
+            Function which returns the step from xy towards the fixed point (to first order).
+            """
             # use lambda to "roll-in" the mapping kwargs
             rolled_map = lambda xy: map(xy, **kwargs)
             M = jacfwd(rolled_map)(xy)
@@ -97,7 +103,14 @@ def step_NM(map, method='jax'):
             return delta
         return jit(step)
     elif method=='sympy':
-        def step(xy, **kwargs):
+        def step(xy, xmod, ymod, **kwargs):
+            """
+            Function which returns the step from xy towards the fixed point (to first order).
+            xmod: divisor of modulo operation of x 
+            ymod: divisior of modulo operation of y
+            xmod and ymod are necessary for sympy as jacobian operation doesn't work on modulo operation in sympy.
+            Put a large number for xmod/ymod if it doesn't need to be modded.
+            """
             x, y = sym.symbols('x y')
             sym_expr = map(**kwargs)
             M = sym_jac_func(sym_expr)(xy)
@@ -106,10 +119,12 @@ def step_NM(map, method='jax'):
             # the f above is a (ij) array where i is the x/y-value and j is a redudant axis of length 1.
             # so we flatten f.
             f = f.flatten()
+            f = np.array([np.mod(f[0], xmod), np.mod(f[1], ymod)])
             b = xy-f
             delta = np.linalg.solve(A,b)
+            ### NOTE: NO JIT APPLIED HERE AS IT DOESN'T WORK WITH SYMPY.
             return delta
-        return jit(step)
+        return step
     else:
         print("Invalid method!")
 

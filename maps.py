@@ -3,6 +3,7 @@ from jax import jit, grad, jacfwd, vmap, jacobian
 from jax.tree_util import Partial
 from jax import config
 import sympy as sym
+from sympy import Subs
 config.update("jax_enable_x64", True)
 
 from matplotlib import pyplot as plt
@@ -54,7 +55,9 @@ def sym_standard_map(k):
     Since it is a Sympy expression, it does not take any inputs.
     """
     x, y = sym.symbols('x y')
-    F = sym.Matrix([x + y + (k/(2*np.pi))*sym.sin(2*np.pi*x) + 0.5, y + (k/(2*np.pi))*sym.sin(2*np.pi*x)])
+    x_new = x + y + (k/(2*np.pi))*sym.sin(2*np.pi*x) + 0.5
+    y_new = y + (k/(2*np.pi))*sym.sin(2*np.pi*x)
+    F = sym.Matrix([x_new, y_new])
     return F
 
 def Nmap(map, N=int, **kwargs):
@@ -69,13 +72,13 @@ def Nmap(map, N=int, **kwargs):
         return x
     return jit(nmap)
 
-def sym_nmap(func, N):
+def sym_nmap(expr, N):
     """
     Takes a Sympy expression as input and outputs a Sympy expression which is the N-map.
     IMPT: func must only have 2 Sympy symbols - x and y. 
     """
     x, y, z = sym.symbols('x y z')
-    iter = func
+    iter = expr
     for _ in range(N-1):
         old_x = iter[0]
         old_y = iter[1]
@@ -84,7 +87,7 @@ def sym_nmap(func, N):
         iter = iter.subs(z, old_y)
     return iter
 
-def sym_jac_func(func):
+def sym_jac_func(expr):
     """
     Takes a Sympy expression as input and outputs a Python function which evaluates the Jacobian of func.
     IMPT: func must only have 2 Sympy symbols - x and y.
@@ -92,7 +95,7 @@ def sym_jac_func(func):
     """
     x, y = sym.symbols('x y')
     X=sym.Matrix([x,y])
-    sym_jac = func.jacobian(X)
+    sym_jac = expr.jacobian(X)
     first_num_jac = sym.lambdify([x,y], sym_jac)
     def num_jac(xy):
         x = xy[0]
