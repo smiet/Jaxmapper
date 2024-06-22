@@ -71,16 +71,24 @@ def linear_starting_points(xy_start = tuple, xy_end = tuple, npoints = int):
     """
     x_start, y_start = xy_start
     x_end, y_end = xy_end
-    # calculate gradient and y-intercept of line with given start and end point
-    m = (y_end - y_start)/(x_end - x_start)
-    c = y_start - m*x_start
-    # create x array with evenly-spaced x-points
-    x_array = np.linspace(x_start, x_end, num = npoints)
-    # create y array with each point given by y = mx + c
-    y_array = np.array([m*x + c for x in x_array])
-    # create an array with shape (npoints, 2)
-    starts = np.stack([x_array,y_array], axis=1)
-    return starts
+    if x_start == x_end: # if the line is vertical
+        # create y array with evenly spaced y_points
+        y_array = np.linspace(y_start, y_end, num=npoints)
+        # create a list containing the points
+        starts = [np.array([x_start, y]) for y in y_array]
+        # turn list into array and return
+        return np.array(starts)
+    else:
+        # calculate gradient and y-intercept of line with given start and end point
+        m = (y_end - y_start)/(x_end - x_start)
+        c = y_start - m*x_start
+        # create x array with evenly-spaced x-points
+        x_array = np.linspace(x_start, x_end, num = npoints)
+        # create y array with each point given by y = mx + c
+        y_array = np.array([m*x + c for x in x_array])
+        # create an array with shape (npoints, 2)
+        starts = np.stack([x_array,y_array], axis=1)
+        return starts
 
 def step_NM(map, method='jax'):
     """
@@ -127,6 +135,26 @@ def step_NM(map, method='jax'):
         return step
     else:
         print("Invalid method!")
+
+def NM(starts, map, niter, **kwargs):
+    delta = step_NM(map,method='jax')    
+    # use lambda to "roll-in" the mapping kwargs
+    rolled_delta = lambda xy: delta(xy, **kwargs)
+    # use vmap to create a function from all starts to all mapped points
+    applydelta = jit(vmap(rolled_delta, in_axes=0))
+    # initialize results array
+    iterations = [starts, ]
+    # calculate mapping of previous mappings niter times
+    for _ in range(niter):
+        old_points = iterations[-1]
+        steps = applydelta(iterations[-1])
+        new_points = np.add(old_points, steps)
+        #NOTE: MANUALLY MODDED THE GUY. LOOK FOR ADVICE AND FIX. ALSO USED JAX METHOD TO CHANGE VALUES.
+        new_points = new_points.at[:, 0].set(np.mod(new_points[:, 0], 1))
+        new_points = new_points.at[:, 1].set(np.mod(new_points[:, 1], 1))
+        iterations.append(new_points)
+    # stack into a nice array for returning. 
+    return np.stack(iterations, axis=-1)
 
 def mapping_vector(map): #TOCHECK
     """
