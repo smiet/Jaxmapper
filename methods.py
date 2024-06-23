@@ -46,7 +46,7 @@ def starts_nontwist(norbits_per_leg):
     starts = np.append(starts, starts3, axis=0)
     return starts
 
-def new_starts(xy_start = tuple, xy_end = tuple, x_points = int, y_points = int):
+def grid_starting_points(xy_start = tuple, xy_end = tuple, x_points = int, y_points = int):
     """
     Creates a grid of starting points determined by given points which are taken as corners of the grid.
     Returns an array of shape (ij) where i is the i-th point in the grid and j is the x/y-value.

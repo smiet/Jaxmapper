@@ -10,29 +10,29 @@ import numpy as onp
 
 from tests import run_test
 from maps import standard_map, sym_standard_map, sym_jac_func, Nmap
-from methods import new_starts, linear_starting_points, calculate_poincare_section, step_NM, NM
+from methods import grid_starting_points, linear_starting_points, calculate_poincare_section, step_NM, NM
 
-#starts = starts_nontwist(200)
 #starts = new_starts(xy_start=(0,0), xy_end=(1,1), x_points=10, y_points=10)
-starts = linear_starting_points(xy_start=(0,0.1), xy_end=(1,0.1), npoints=100)
-#starts = np.array([0.1, 0.1])
-#start = np.array([0.98436717, 0.5])
-#starts = np.array([[0.4, 0.4], [0.6, 0.6]])
+# starts1 = linear_starting_points(xy_start=(0.5,0), xy_end=(0.5,1), npoints=1000)
+# starts2 = linear_starting_points(xy_start=(0.6,0), xy_end=(0.6,1), npoints=1000)
+# starts3 = linear_starting_points(xy_start=(0.4,0), xy_end=(0.4,1), npoints=1000)
+# starts = np.append(starts1, starts2, axis=0)
+# starts = np.append(starts, starts3, axis=0)
+starts = np.array([0.1, 0.1])
 
+map2 = Nmap(standard_map, 4, k=2.18)
 
-points = NM(starts, standard_map, 10000, k=1)
+points = NM(starts, map2, 10000)
 
-# delta = step_NM(standard_map, method='jax')
-# step = delta(starts, k=0.5)
-
-#points = calculate_poincare_section(starts, 10000, mapping=standard_map, k = 1)
+#points = calculate_poincare_section(starts, 10000, mapping=standard_map, k = 2.18)
 
 #plot_save_points(points, name='fig', colors='random')
 
 fig, ax = plt.subplots(figsize=(12, 6))
 #i = round(100*onp.random.rand())
+final_iter = points.shape[2]
 for i in range(points.shape[0]):
-    ax.scatter(points[i,0, points.shape[2]], points[i,1, points.shape[2]], color=onp.random.random(3), s=10, marker ='.')
+    ax.scatter(points[i,0,final_iter], points[i,1,final_iter], color=onp.random.random(3), s=10, marker ='.')
 plt.xlim([0, 1])
 plt.ylim([0, 1])
 plt.tight_layout
