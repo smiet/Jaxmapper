@@ -105,8 +105,8 @@ def step_NM(map, method='jax'):
             rolled_map = lambda xy: map(xy, **kwargs)
             M = jacfwd(rolled_map)(xy)
             A = M - np.eye(2)
-            f = rolled_map(xy)
-            b = xy-f
+            diff = mapping_vector(rolled_map)
+            b = -diff(xy)
             delta = np.linalg.solve(A,b)
             return delta
         return jit(step)
@@ -136,22 +136,31 @@ def step_NM(map, method='jax'):
     else:
         print("Invalid method!")
 
-def NM(starts, map, niter, **kwargs):
+def NM(starts, map, modulo, niter, **kwargs):
+    """
+    Takes as input an array of starting points, a map, and a number of iterations.
+    Also takes in a modulo function which is based on the modulo of the input map.
+    Iterates niter points to move the starting points toward fixed points.
+    Returns an array of shape (ijk) where i indexes the point in starts, j indexes the x/y value, 
+    and k indexes the iteration number (0 is the original point before any steps).    
+    """
     delta = step_NM(map,method='jax')    
     # use lambda to "roll-in" the mapping kwargs
     rolled_delta = lambda xy: delta(xy, **kwargs)
     # use vmap to create a function from all starts to all mapped points
     applydelta = jit(vmap(rolled_delta, in_axes=0))
+    # use vmap to prepare modulo for use
+    modulo = jit(vmap(modulo, in_axes=0))
     # initialize results array
     iterations = [starts, ]
     # calculate mapping of previous mappings niter times
     for _ in range(niter):
         old_points = iterations[-1]
-        steps = applydelta(iterations[-1])
+        steps = applydelta(old_points)
         new_points = np.add(old_points, steps)
-        #NOTE: MANUALLY MODDED THE GUY. LOOK FOR ADVICE AND FIX. ALSO USED JAX METHOD TO CHANGE VALUES.
-        new_points = new_points.at[:, 0].set(np.mod(new_points[:, 0], 1))
-        new_points = new_points.at[:, 1].set(np.mod(new_points[:, 1], 1))
+        new_points = modulo(new_points)
+        new_points = new_points.at[:, 0].set(new_points[:, 0])
+        new_points = new_points.at[:, 1].set(new_points[:, 1])
         iterations.append(new_points)
     # stack into a nice array for returning. 
     return np.stack(iterations, axis=-1)
@@ -159,6 +168,7 @@ def NM(starts, map, niter, **kwargs):
 def mapping_vector(map): #TOCHECK
     """
     Returns a function which calculates the difference between point xy and the mapping of xy.
+    map(xy) - xy
     """
     def diff(start, **kwargs):
         end = map(start, **kwargs)

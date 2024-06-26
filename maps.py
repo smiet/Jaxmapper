@@ -48,6 +48,17 @@ def standard_map(xy, k):
     theta = np.mod(theta_old + p + 0.5, 1)
     # return
     return np.array([theta, p])
+@jit
+def standard_map_modulo(xy):
+    """
+    Returns modulo of arguments based on Standard Map definition.
+    """
+    theta = xy[0]
+    p=xy[1]
+
+    theta = np.mod(theta, 1)
+    p = np.mod(p, 1)
+    return np.array([theta, p])
 
 def sym_standard_map(k):
     """
