@@ -205,23 +205,7 @@ def theta(map):
     mapping_vector_fun = mapping_vector(map)
     def final(xy, **kwargs):
         return np.arctan2(*mapping_vector_fun(xy, **kwargs))
-    return final
-
-def test_isotrope(map):
-    """
-    Takes a mapping_vector function as input.
-    Outputs a function which calculates the isotrope of xy given a certain map.
-    Isotrope: Direction in which mapping vector doesn't change
-    different from main isotrope in that isotrope 
-    """
-    map_theta = theta(map)
-    def step_TNM(xy, **kwargs):
-        rolled_theta = lambda xy: map_theta(xy, **kwargs)
-        dtheta = grad(rolled_theta, argnums=0)
-        isotrope =  np.array([[0,1],[-1,0]]) @ dtheta(xy)
-        small_isotrope = 10**(-7) * np.linalg.norm(isotrope)
-        return small_isotrope
-    return step_TNM
+    return jit(final)
 
 def isotrope(map):
     """
@@ -234,4 +218,69 @@ def isotrope(map):
         rolled_theta = lambda xy: map_theta(xy, **kwargs)
         dtheta = grad(rolled_theta, argnums=0)
         return np.array([[0,1],[-1,0]]) @ dtheta(xy)
+    return jit(step_TNM)
+
+def test_isotrope(map):
+    """
+    Takes a mapping_vector function as input.
+    Outputs a function which calculates the isotrope of xy given a certain map.
+    Isotrope: Direction in which mapping vector doesn't change
+    Different from main isotrope in that small_isotrope is used for testing whether the isotrope concept works.
+    """
+    map_theta = theta(map)
+    def step_TNM(xy, **kwargs):
+        rolled_theta = lambda xy: map_theta(xy, **kwargs)
+        dtheta = grad(rolled_theta, argnums=0)
+        isotrope =  np.array([[0,1],[-1,0]]) @ dtheta(xy)
+        norm = np.linalg.norm(isotrope)
+        small_isotrope = 10**(-7)/norm * isotrope
+        return small_isotrope
     return step_TNM
+
+def theta_comparison(map):
+    """
+    Takes a map as input.
+    Outputs a function which takes in an xy and finds the step in the isotropic direction. 
+    It calculates theta between xy and xy+step and returns the difference.
+    """
+    direction = test_isotrope(map)
+    test_theta = theta(map)
+    def final(xy, **kwargs):
+        old_theta = test_theta(xy, **kwargs)
+        step = direction(xy, **kwargs)
+        new_theta = test_theta(xy+step, **kwargs)
+        return new_theta - old_theta
+    return final
+
+def newton_fractal(starts, map, modulo, step, niter, grid=grid_starting_points((0,0), (1,1), 10, 10), **kwargs):
+    # initialise fixed point finder function. higher niter to ensure accuracy.
+    map_fixed_point_finder = fixed_point_finder(map, modulo, step, 25)
+    #initialise array with same shape as grid.
+    fixed_points = np.empty_like(grid)
+    # write destinations of points in grid into fixed_points array.
+    for i in range(grid.shape[0]):
+        final = map_fixed_point_finder(grid[i,:], **kwargs)
+        fixed_points = fixed_points.at[i,:].set(final)
+    # np.unique with rounding to get array of unique fixed points.
+    unique_fixed_points = np.unique(np.round(fixed_points, 5), axis=0)
+    # initialise color map based on number of points in unique_fixed_points.
+    from matplotlib import colormaps
+    cmap = colormaps['gist_rainbow']
+    colours = cmap(np.linspace(0, 1, unique_fixed_points.shape[0]))
+    # reinitialise fixed_point_finder to use niter argument.
+    map_fixed_point_finder = fixed_point_finder(map, modulo, step, niter)
+    # initialise list of colours which matches the points in starts.
+    colour_list = [0 for i in starts]
+    # use fixed_point_finder on points in starts. iterate over unique_fixed_points and calculate distance.
+    # if distance is less than all distances encountered before, rewrite colour value in colour_list to the closest fixed point.  
+    from scipy import spatial
+    for i in range(starts.shape[0]):
+        end = map_fixed_point_finder(starts[i], **kwargs)
+        min_d=2
+        for j in range(unique_fixed_points.shape[0]):
+            distance = spatial.distance.euclidean(end, unique_fixed_points[j])
+            if distance < min_d:
+                min_d = distance
+                colour_list[i] = colours[j]
+    # return colour_list. this is to be plotted in plt.scatter.
+    return colour_list

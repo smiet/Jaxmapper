@@ -34,6 +34,12 @@ def tokamap(xy, K=0, w=0.666, w0=0.7, w1=0.3):
     #theta = np.mod(xy[0] + a*(1 - y**2), 1)
     return np.array([theta,psi])
 
+def basecase(xy):
+    """
+    f(z) = z^4 - 1
+    g(z) = 
+    """
+
 @jit
 def standard_map(xy, k):
     """
