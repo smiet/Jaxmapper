@@ -11,17 +11,21 @@ import numpy as onp
 
 from tests import run_test
 from maps import standard_map, sym_standard_map, sym_jac_func, Nmap
-from methods import grid_starting_points, linear_starting_points, calculate_poincare_section, step_NM, NM
+from methods import grid_starting_points, linear_starting_points, calculate_poincare_section, step_NM
+from methods import fixed_point_trajectory
 
 from maps import standard_map_modulo as modulo
 
-starts = linear_starting_points(xy_start=(0.5,0), xy_end=(0.5,1), npoints=1000)
-initial_point = np.array([[0.4, 0.7]])
+k=0.9
 
-map3 = Nmap(standard_map, 3, k=1.5)
+starts = linear_starting_points(xy_start=(0.5,0), xy_end=(0.5,1), npoints=500)
+initial_points = onp.random.random(2)
 
-points = calculate_poincare_section(starts, 10000, mapping=standard_map, k = 1.5)
-steps = NM(initial_point, map3, modulo=modulo, niter=1000)
+map3 = Nmap(standard_map, 3)
+
+step = step_NM(map3)
+points = calculate_poincare_section(starts, 10000, mapping=standard_map, k = k)
+steps = fixed_point_trajectory(initial_points, modulo=modulo, step=step, niter=1000, k=k)
 
 fig, ax = plt.subplots(figsize=(12, 6))
 #i = round(100*onp.random.rand())
@@ -34,17 +38,23 @@ for i in range(points.shape[0]):
                #color=colors[i],
                s=0.0001, marker ='.')
 
-cmap = colormaps['gist_heat']
-colors = cmap(np.linspace(0.5, 1, steps.shape[2]))
+cmap1 = colormaps['gist_heat']
+cmap2 = colormaps['PRGn']
+cmap3 = colormaps['PiYG']
+colors1 = cmap1(np.linspace(0.5, 1, steps.shape[1]))
+colors2 = cmap2(np.linspace(0.25, 0.5, steps.shape[1]))
+colors3 = cmap2(np.linspace(0.75, 0.5, steps.shape[1]))
+colors4 = cmap3(np.linspace(0.25, 0.5, steps.shape[1]))
+colors = [colors1, colors2, colors3, colors4]
 
-for i in range(steps.shape[2]):
-    ax.plot(steps[0,0,i:i+2], steps[0,1,i:i+2],
+for i in range(steps.shape[1]):
+    ax.plot(steps[0,i:i+2], steps[1,i:i+2],
             color='black',
-            ms=10, marker ='.', markerfacecolor=colors[i])
+            ms=10, marker ='.', markerfacecolor=colors[0][i])
 
 plt.xlabel(r'$\theta$')
 plt.ylabel(r'$p$')
-plt.title('NM to find fixed points of 3-cycle. k=1.5.')
+plt.title(f'NM to find fixed points of 3-cycle. k={k}.')
 plt.xlim([0, 1])
 plt.ylim([0, 1])
 plt.tight_layout

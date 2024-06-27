@@ -136,7 +136,31 @@ def step_NM(map, method='jax'):
     else:
         print("Invalid method!")
 
-def NM(starts, map, modulo, niter, **kwargs):
+def apply_step(step, modulo):
+    """
+    Takes as input a step function 'step' and a modulo linked to the map.
+    Outputs a function which takes in an xy and returns xy + step(xy).
+    """
+    def final(xy, **kwargs):
+        return modulo(xy + step(xy, **kwargs))
+    
+    return jit(final)
+
+def fixed_point_finder(map, modulo, step, Niter):
+    """
+    Takes as input a map and its modulo, a step function, and a number of iterations 'Niter'.
+    Outputs a function which takes in a starting point and outputs the point 
+    which is the n-th step away from the starting point after Niter steps.
+    """
+    step_for_map = step(map)
+    apply_step_for_map = apply_step(step_for_map, modulo)
+    Nstep = Nmap(apply_step_for_map, Niter)
+    def final(xy, **kwargs):
+        return Nstep(xy, **kwargs)
+    
+    return jit(final)
+
+def fixed_point_trajectory(xy, modulo, step, niter, **kwargs):
     """
     Takes as input an array of starting points, a map, and a number of iterations.
     Also takes in a modulo function which is based on the modulo of the input map.
@@ -144,28 +168,25 @@ def NM(starts, map, modulo, niter, **kwargs):
     Returns an array of shape (ijk) where i indexes the point in starts, j indexes the x/y value, 
     and k indexes the iteration number (0 is the original point before any steps).    
     """
-    delta = step_NM(map,method='jax')    
+    delta = step
     # use lambda to "roll-in" the mapping kwargs
     rolled_delta = lambda xy: delta(xy, **kwargs)
-    # use vmap to create a function from all starts to all mapped points
-    applydelta = jit(vmap(rolled_delta, in_axes=0))
-    # use vmap to prepare modulo for use
-    modulo = jit(vmap(modulo, in_axes=0))
+    # jit rolled_delta and modulo
+    applydelta = jit(rolled_delta)
+    modulo = jit(modulo)
     # initialize results array
-    iterations = [starts, ]
+    iterations = [xy, ]
     # calculate mapping of previous mappings niter times
     for _ in range(niter):
-        old_points = iterations[-1]
-        steps = applydelta(old_points)
-        new_points = np.add(old_points, steps)
-        new_points = modulo(new_points)
-        new_points = new_points.at[:, 0].set(new_points[:, 0])
-        new_points = new_points.at[:, 1].set(new_points[:, 1])
-        iterations.append(new_points)
+        old_point = iterations[-1]
+        step = applydelta(old_point)
+        new_point_full = old_point + step
+        new_point = modulo(new_point_full)
+        iterations.append(new_point)
     # stack into a nice array for returning. 
     return np.stack(iterations, axis=-1)
 
-def mapping_vector(map): #TOCHECK
+def mapping_vector(map):
     """
     Returns a function which calculates the difference between point xy and the mapping of xy.
     map(xy) - xy
@@ -176,11 +197,41 @@ def mapping_vector(map): #TOCHECK
         return vec
     return jit(diff)
 
-def isotrope(xy, mapping_vector_fun): #TODO
+def theta(map):
     """
-    calculate the isotrope
+    Takes as input a map.
+    Outputs a function which accepts xy and kwargs as input. This function calculates the angle between map(xy)-xy and the horizontal.
+    """
+    mapping_vector_fun = mapping_vector(map)
+    def final(xy, **kwargs):
+        return np.arctan2(*mapping_vector_fun(xy, **kwargs))
+    return final
 
-    re-write so this monster is readable and understandable
-    UNTESTED
+def test_isotrope(map):
     """
-    return jacfwd(mapping_vector_fun)*(np.array([[0,1],[-1,0]]))
+    Takes a mapping_vector function as input.
+    Outputs a function which calculates the isotrope of xy given a certain map.
+    Isotrope: Direction in which mapping vector doesn't change
+    different from main isotrope in that isotrope 
+    """
+    map_theta = theta(map)
+    def step_TNM(xy, **kwargs):
+        rolled_theta = lambda xy: map_theta(xy, **kwargs)
+        dtheta = grad(rolled_theta, argnums=0)
+        isotrope =  np.array([[0,1],[-1,0]]) @ dtheta(xy)
+        small_isotrope = 10**(-7) * np.linalg.norm(isotrope)
+        return small_isotrope
+    return step_TNM
+
+def isotrope(map):
+    """
+    Takes a mapping_vector function as input.
+    Outputs a function which calculates the isotrope of xy given a certain map.
+    Isotrope: Direction in which mapping vector doesn't change
+    """
+    map_theta = theta(map)
+    def step_TNM(xy, **kwargs):
+        rolled_theta = lambda xy: map_theta(xy, **kwargs)
+        dtheta = grad(rolled_theta, argnums=0)
+        return np.array([[0,1],[-1,0]]) @ dtheta(xy)
+    return step_TNM

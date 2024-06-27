@@ -11,7 +11,9 @@ import numpy as onp
 
 from tests import run_test
 from maps import standard_map, sym_standard_map, sym_jac_func, Nmap
-from methods import grid_starting_points, linear_starting_points, calculate_poincare_section, step_NM, NM
+from methods import grid_starting_points, linear_starting_points, calculate_poincare_section
+from methods import step_NM, apply_step, fixed_point_finder, fixed_point_trajectory
+from methods import mapping_vector, theta, isotrope
 
 from maps import standard_map_modulo as modulo
 
@@ -22,7 +24,8 @@ starts1 = linear_starting_points(xy_start=(0.5,0), xy_end=(0.5,1), npoints=1000)
 # starts = np.append(starts1, starts2, axis=0)
 # starts = np.append(starts, starts3, axis=0)
 starts = starts1
-
+starts = onp.random.rand(2)
+starts = np.array([0.1, 0.1])
 
 
 

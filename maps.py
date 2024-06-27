@@ -71,15 +71,13 @@ def sym_standard_map(k):
     F = sym.Matrix([x_new, y_new])
     return F
 
-def Nmap(map, N=int, **kwargs):
+def Nmap(map, N=int):
     """
     Takes in a function and an integer N. Outputs a function which is the map applied N times.
     """
-    # use lambda to "roll-in" the mapping kwargs
-    rolled_map = lambda xy: map(xy, **kwargs)
     def nmap(x, **kwargs):
         for _ in range(N):
-            x = rolled_map(x)
+            x = map(x, **kwargs)
         return x
     return jit(nmap)
 
@@ -113,6 +111,5 @@ def sym_jac_func(expr):
         y = xy[1]
         return first_num_jac(x, y)
     return num_jac 
-
 
 
