@@ -34,11 +34,25 @@ def tokamap(xy, K=0, w=0.666, w0=0.7, w1=0.3):
     #theta = np.mod(xy[0] + a*(1 - y**2), 1)
     return np.array([theta,psi])
 
+@jit
 def basecase(xy):
     """
-    f(z) = z^4 - 1
-    g(z) = 
+    f(z) = z^3 - 1 (want to find the roots of this)
+    g(z) = z^3 - 1 + z (finding the fixed points of this is equivalent to finding the roots of f)
     """
+    x = xy[0]
+    y = xy[1]
+    x_new = x**3 -3*x*y**2 + x - 1
+    y_new = 3*y*x**2 - y**3 + y 
+    return np.array([x_new, y_new])
+
+@jit
+def no_modulo(xy):
+    """
+    Returns argument.
+    Required as some of the maps don't have modulo.
+    """
+    return xy
 
 @jit
 def standard_map(xy, k):
@@ -54,6 +68,7 @@ def standard_map(xy, k):
     theta = np.mod(theta_old + p + 0.5, 1)
     # return
     return np.array([theta, p])
+
 @jit
 def standard_map_modulo(xy):
     """

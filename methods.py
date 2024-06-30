@@ -252,35 +252,66 @@ def theta_comparison(map):
         return new_theta - old_theta
     return final
 
-def newton_fractal(starts, map, modulo, step, niter, grid=grid_starting_points((0,0), (1,1), 10, 10), **kwargs):
-    # initialise fixed point finder function. higher niter to ensure accuracy.
-    map_fixed_point_finder = fixed_point_finder(map, modulo, step, 25)
-    #initialise array with same shape as grid.
-    fixed_points = np.empty_like(grid)
-    # write destinations of points in grid into fixed_points array.
-    for i in range(grid.shape[0]):
-        final = map_fixed_point_finder(grid[i,:], **kwargs)
-        fixed_points = fixed_points.at[i,:].set(final)
-    # np.unique with rounding to get array of unique fixed points.
-    unique_fixed_points = np.unique(np.round(fixed_points, 5), axis=0)
+def find_unique_fixed_points(map, modulo):
+    """
+    Returns a function which returns an array containing the fixed points of the map.
+    Array is of shape (ij) where i indexes the fixed points and j indexes the x/y-value.
+    """
+    import math
+    def final(grid, step, **kwargs):
+        # initialise fixed point finder function. higher niter to ensure accuracy.
+        map_fixed_point_finder = fixed_point_finder(map, modulo, step, 25)
+        #initialise array with same shape as grid.
+        fixed_points = np.empty_like(grid)
+        # write destinations of points in grid into fixed_points array.
+        for i in range(grid.shape[0]):
+            final = map_fixed_point_finder(grid[i,:], **kwargs)
+            # deal with nan points
+            if math.isnan(final[0]) == False and math.isnan(final[1]) == False:
+                fixed_points = fixed_points.at[i,:].set(final)
+        # np.unique with rounding to get array of unique fixed points.
+        unique_fixed_points = np.unique(np.round(fixed_points, 5), axis=0)
+        
+        return unique_fixed_points
+    # NOTE: CANT JIT, NOT SURE WHY
+    return final
+
+def newton_fractal(xy_start, xy_end, x_points, y_points, map, modulo, step, niter, test_grid=grid_starting_points((0,0), (1,1), 10, 10), **kwargs):
+    # use find_unique_fixed_points to find the fixed points
+    map_unique_fixed_points = find_unique_fixed_points(map, modulo)
+    unique_fixed_points = map_unique_fixed_points(test_grid, step, **kwargs)
     # initialise color map based on number of points in unique_fixed_points.
     from matplotlib import colormaps
     cmap = colormaps['gist_rainbow']
     colours = cmap(np.linspace(0, 1, unique_fixed_points.shape[0]))
-    # reinitialise fixed_point_finder to use niter argument.
+    # colours = [np.array([114,229,239]), np.array([9,123,53]), np.array([42,226,130]), np.array([236,77,216]), 
+    #            np.array([157,187,230]), np.array([62,105,182]), np.array([149,200,88]), np.array([251,32,118]),
+    #            np.array([52,245,14]), np.array([225,50,25]), np.array([8,132,144]), np.array([218,164,249]), 
+    #            np.array([141,78,182]), np.array([250,209,57]), np.array([162,85,66]), np.array([233,191,152]),
+    #            np.array([111,125,67]), np.array([251,137,155]), np.array([231,134,7]), np.array([140,46,252])]
+    # initialise fixed_point_finder to use niter argument.
     map_fixed_point_finder = fixed_point_finder(map, modulo, step, niter)
     # initialise list of colours which matches the points in starts.
-    colour_list = [0 for i in starts]
-    # use fixed_point_finder on points in starts. iterate over unique_fixed_points and calculate distance.
-    # if distance is less than all distances encountered before, rewrite colour value in colour_list to the closest fixed point.  
+    colour_grid = np.empty((y_points, x_points, 4))
+    # calculate x_stpe and y_step for ease of use.
+    x_min, y_min = xy_start
+    x_max, y_max = xy_end
+    x_step = (x_max - x_min)/(x_points-1)
+    y_step = (y_max - y_min)/(y_points-1)
     from scipy import spatial
-    for i in range(starts.shape[0]):
-        end = map_fixed_point_finder(starts[i], **kwargs)
+    # iterate over coordinate axes of colour_grid
+    for index in onp.ndindex((y_points, x_points)):
+        x = x_min + index[0]*x_step
+        y = y_min + index[1]*y_step 
+        start = np.array([x, y])
+        # use fixed_point_finder on points in starts. iterate over unique_fixed_points and calculate distance.
+        end = map_fixed_point_finder(start, **kwargs)
         min_d=2
-        for j in range(unique_fixed_points.shape[0]):
-            distance = spatial.distance.euclidean(end, unique_fixed_points[j])
+        # if distance is less than all distances encountered before, rewrite colour value in colour_grid to the closest fixed point.  
+        for k in range(unique_fixed_points.shape[0]):
+            distance = spatial.distance.euclidean(end, unique_fixed_points[k])
             if distance < min_d:
                 min_d = distance
-                colour_list[i] = colours[j]
-    # return colour_list. this is to be plotted in plt.scatter.
-    return colour_list
+                colour_grid = colour_grid.at[index[1], index[0], :].set(colours[k])
+    # return colour_grid. this is to be plotted in plt.imshow.
+    return colour_grid
