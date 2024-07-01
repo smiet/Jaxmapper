@@ -262,7 +262,7 @@ def step_TNM(map):
             return delta
         elif length == 0:
             return np.array([0,0])
-    return step
+    return jit(step)
 
 def theta_comparison(map):
     """
@@ -302,7 +302,7 @@ def find_unique_fixed_points(map, modulo):
     # NOTE: CANT JIT, NOT SURE WHY
     return final
 
-def newton_fractal(xy_start, xy_end, x_points, y_points, map, modulo, step, niter, test_grid=grid_starting_points((0,0), (1,1), 10, 10), **kwargs):
+def newton_fractal(xy_start, xy_end, x_points, y_points, map, modulo, step, niter, test_grid=grid_starting_points((-1,-1), (1,1), 10, 10), **kwargs):
     # use find_unique_fixed_points to find the fixed points
     map_unique_fixed_points = find_unique_fixed_points(map, modulo)
     unique_fixed_points = map_unique_fixed_points(test_grid, step, **kwargs)
@@ -347,3 +347,32 @@ def newton_fractal(xy_start, xy_end, x_points, y_points, map, modulo, step, nite
                 output_grid = output_grid.at[j, i].set(k)
     # return output_grid.
     return output_grid
+
+def apply_finder_to_grid(map, step, startpoints, x_points, y_points, fixedpoints, Niter, **kwargs):
+    """
+    apply the step function to a grid of starting points to find the fixed points.
+
+    Parameters:
+    step: function
+        step function to be applied to the points in the grid startpoints
+        (genterated from a map and modulo using step_NM f.ex.)
+    startpoints: NxNx2 array
+        grid of starting points
+    fixedpoints: Nx2 array
+        fixed points that you have pre-computed
+    Niter: int
+        number of iterations to run the step function
+    """
+    start_points = startpoints.reshape(y_points,x_points, 2)
+    # genetate the N-step function with kwargs rolled-in
+    test_step = step(map)
+    Nstep = jit(lambda xy: Nmap(test_step, Niter)(xy, **kwargs))
+    # vmap the Nstep 
+    Nstep_vmap = vmap(vmap(Nstep))
+    # apply the Nstep to the grid of starting points
+    end_points = Nstep_vmap(start_points)
+    # calculate the distance to the fixed points
+    distances = np.linalg.norm(end_points[:,:,None,:] - fixedpoints[None, None, :, :], axis=-1)
+    # find the index of the closest fixed point
+    closest = np.argmin(distances, axis=-1)
+    return closest

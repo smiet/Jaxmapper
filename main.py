@@ -28,12 +28,22 @@ starts1 = linear_starting_points(xy_start=(0.5,0), xy_end=(0.5,1), npoints=10)
 # starts = np.append(starts, starts3, axis=0)
 
 grid = grid_starting_points((-1,-1), (1,1), 10, 10)
-basecase_fixed_points = find_unique_fixed_points(basecase, no_modulo)
-unique_fixed_points = basecase_fixed_points(grid, step_NM)
-test = newton_fractal((-1, -1), (1,1), 20, 20, 
-                    basecase, no_modulo, step_NM, niter=50,
-                    test_grid=grid_starting_points((-1,1), (1,1), 10,10))
-print(test)
+
+xy_start = (-1,-1)
+xy_end = (1,1)
+x_points = 10
+y_points = 10
+starts = grid_starting_points(xy_start=(-1,-1), xy_end=(1,1), x_points=x_points, y_points=y_points)
+
+test = newton_fractal(xy_start, xy_end, x_points, y_points, basecase, no_modulo, step_NM, 10)
+print(np.squeeze(test, axis=-1))
+
+# basecase_fixed_points = find_unique_fixed_points(basecase, no_modulo)
+# fixed_points = basecase_fixed_points(grid, step_NM)
+
+# from methods import apply_finder_to_grid
+# test = apply_finder_to_grid(basecase, step_NM, starts, x_points, y_points, fixed_points, 15)
+# print(test)
 
 
 #TODO: find a fix for sympy mod issue (or ask chris if sympy can be abandoned)
