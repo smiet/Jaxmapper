@@ -306,19 +306,25 @@ def newton_fractal(xy_start, xy_end, x_points, y_points, map, modulo, step, nite
     # use find_unique_fixed_points to find the fixed points
     map_unique_fixed_points = find_unique_fixed_points(map, modulo)
     unique_fixed_points = map_unique_fixed_points(test_grid, step, **kwargs)
+    
     # initialise color map based on number of points in unique_fixed_points.
-    from matplotlib import colormaps
-    cmap = colormaps['gist_rainbow']
-    colours = cmap(np.linspace(0, 1, unique_fixed_points.shape[0]))
+    # from matplotlib import colormaps
+    # cmap = colormaps['gist_rainbow']
+    # colours = cmap(np.linspace(0, 1, unique_fixed_points.shape[0]))
     # colours = [np.array([114,229,239]), np.array([9,123,53]), np.array([42,226,130]), np.array([236,77,216]), 
     #            np.array([157,187,230]), np.array([62,105,182]), np.array([149,200,88]), np.array([251,32,118]),
     #            np.array([52,245,14]), np.array([225,50,25]), np.array([8,132,144]), np.array([218,164,249]), 
     #            np.array([141,78,182]), np.array([250,209,57]), np.array([162,85,66]), np.array([233,191,152]),
     #            np.array([111,125,67]), np.array([251,137,155]), np.array([231,134,7]), np.array([140,46,252])]
+    
     # initialise fixed_point_finder to use niter argument.
-    map_fixed_point_finder = fixed_point_finder(map, modulo, step, niter)
-    # initialise list of colours which matches the points in starts.
-    colour_grid = np.empty((y_points, x_points, 4))
+    map_fixed_point_finder = vmap(fixed_point_finder(map, modulo, step, niter), in_axes=0)
+    # initialise grid of starting points.
+    start_grid = grid_starting_points(xy_start, xy_end, x_points, y_points)
+    # apply map_fixed_point_finder on start_grid.
+    end_grid = map_fixed_point_finder(start_grid)
+    # initialise output array.
+    output_grid = np.empty((y_points, x_points, 1))
     # calculate x_stpe and y_step for ease of use.
     x_min, y_min = xy_start
     x_max, y_max = xy_end
@@ -326,18 +332,18 @@ def newton_fractal(xy_start, xy_end, x_points, y_points, map, modulo, step, nite
     y_step = (y_max - y_min)/(y_points-1)
     from scipy import spatial
     # iterate over coordinate axes of colour_grid
-    for index in onp.ndindex((y_points, x_points)):
-        x = x_min + index[0]*x_step
-        y = y_min + index[1]*y_step 
-        start = np.array([x, y])
-        # use fixed_point_finder on points in starts. iterate over unique_fixed_points and calculate distance.
-        end = map_fixed_point_finder(start, **kwargs)
+    for index, point in enumerate(start_grid): 
+        end = end_grid[index]
+        # calculate indices of point.
+        i = int((point[0] - x_min)/x_step)
+        j = int((point[1] - y_min)/y_step)
+        # set distance from end to closed fixed point to be 2 (arbitrary). iterate over unique_fixed_points and calculate distance.
         min_d=2
-        # if distance is less than all distances encountered before, rewrite colour value in colour_grid to the closest fixed point.  
+        # if distance is less than all distances encountered before, rewrite index value in output_grid to the closest fixed point.  
         for k in range(unique_fixed_points.shape[0]):
             distance = spatial.distance.euclidean(end, unique_fixed_points[k])
             if distance < min_d:
                 min_d = distance
-                colour_grid = colour_grid.at[index[1], index[0], :].set(colours[k])
-    # return colour_grid. this is to be plotted in plt.imshow.
-    return colour_grid
+                output_grid = output_grid.at[j, i].set(k)
+    # return output_grid.
+    return output_grid
