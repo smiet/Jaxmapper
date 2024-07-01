@@ -3,6 +3,7 @@ from jax import jit, grad, jacfwd, vmap, jacobian
 from jax.tree_util import Partial
 from jax import config
 import sympy as sym
+import math
 config.update("jax_enable_x64", True)
 
 from matplotlib import pyplot as plt
@@ -52,10 +53,10 @@ def grid_starting_points(xy_start = tuple, xy_end = tuple, x_points = int, y_poi
     Returns an array of shape (ij) where i is the i-th point in the grid and j is the x/y-value.
     Length of i is x_points*y_points.
     """
-    x_start = xy_start[0]
-    y_start = xy_start[1]
-    x_end = xy_end[0]
-    y_end = xy_end[1]
+    x_start = xy_start[0] + np.sqrt(2)*10e-9
+    y_start = xy_start[1] + np.sqrt(2)*10e-9
+    x_end = xy_end[0] + np.sqrt(2)*10e-9
+    y_end = xy_end[1] + np.sqrt(2)*10e-9
     # create arrays for x and y points
     x = np.linspace(x_start, x_end, x_points)
     y = np.linspace(y_start, y_end, y_points)
@@ -204,7 +205,8 @@ def theta(map):
     """
     mapping_vector_fun = mapping_vector(map)
     def final(xy, **kwargs):
-        return np.arctan2(*mapping_vector_fun(xy, **kwargs))
+        x, y = mapping_vector_fun(xy, **kwargs)
+        return np.arctan2(y, x)
     return jit(final)
 
 def isotrope(map):
@@ -214,11 +216,17 @@ def isotrope(map):
     Isotrope: Direction in which mapping vector doesn't change
     """
     map_theta = theta(map)
-    def step_TNM(xy, **kwargs):
+    def step(xy, **kwargs):
         rolled_theta = lambda xy: map_theta(xy, **kwargs)
         dtheta = grad(rolled_theta, argnums=0)
-        return np.array([[0,1],[-1,0]]) @ dtheta(xy)
-    return jit(step_TNM)
+        x = dtheta(xy)[0]
+        y = dtheta(xy)[1]
+        if math.isnan(x) == True or math.isnan(y) == True:
+            return np.array([0.,0.])
+        else:
+            return np.array([[0,1],[-1,0]]) @ dtheta(xy)
+    # NOTE: CANT JIT, NOT SURE WHY
+    return step
 
 def test_isotrope(map):
     """
@@ -236,6 +244,25 @@ def test_isotrope(map):
         small_isotrope = 10**(-7)/norm * isotrope
         return small_isotrope
     return step_TNM
+
+def step_TNM(map):
+    """
+    Takes as input a map. 
+    Outputs a function 'step' which takes in xy and **kwargs of map, and outputs a Topological Newton step for xy towards a fixed point.
+    """
+    map_isotrope = isotrope(map)
+    def step(xy, **kwargs):
+        """
+        Function which returns the step from xy towards the fixed point (to first order).
+        """
+        delta = map_isotrope(xy, **kwargs)
+        length = np.linalg.norm(delta)
+        if length > 0:
+            delta = (1/length)**2 * delta
+            return delta
+        elif length == 0:
+            return np.array([0,0])
+    return step
 
 def theta_comparison(map):
     """
@@ -257,7 +284,6 @@ def find_unique_fixed_points(map, modulo):
     Returns a function which returns an array containing the fixed points of the map.
     Array is of shape (ij) where i indexes the fixed points and j indexes the x/y-value.
     """
-    import math
     def final(grid, step, **kwargs):
         # initialise fixed point finder function. higher niter to ensure accuracy.
         map_fixed_point_finder = fixed_point_finder(map, modulo, step, 25)

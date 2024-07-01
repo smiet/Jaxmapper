@@ -27,31 +27,8 @@ starts1 = linear_starting_points(xy_start=(0.5,0), xy_end=(0.5,1), npoints=10)
 # starts = np.append(starts1, starts2, axis=0)
 # starts = np.append(starts, starts3, axis=0)
 
-from methods import find_unique_fixed_points
-from maps import basecase, no_modulo
+start = np.array([0.1, 0.5])
 
-grid = grid_starting_points((-1,-1), (1,1), 10, 10)
-
-
-basecase_fixed_points = find_unique_fixed_points(basecase, no_modulo)
-unique_fixed_points = basecase_fixed_points(grid, step_NM)
-
-cmap = colormaps['gist_rainbow']
-colours = cmap(np.linspace(0, 1, unique_fixed_points.shape[0]))
-
-test = newton_fractal((-1, -1), (1,1), 300, 300, 
-                      basecase, no_modulo, step_NM, niter=50,
-                      test_grid=grid_starting_points((-1,1), (1,1), 10,10))
-
-
-plt.imshow(test, origin = 'lower', extent=(-1, 1, -1, 1))
-plt.scatter(unique_fixed_points[:, 0], unique_fixed_points[:, 1], facecolor=colours, marker='o', 
-            edgecolor='black', linewidth = 2)
-
-# plt.xlim([0,1])
-# plt.ylim([0,1])
-plt.title('Newtons Fractal for roots of z^3 - 1')
-plt.savefig(fname='base case.pdf', bbox_inches='tight', dpi=300)
 
 #TODO: find a fix for sympy mod issue (or ask chris if sympy can be abandoned)
 # F = sym_standard_map(0.5)
@@ -64,7 +41,6 @@ plt.savefig(fname='base case.pdf', bbox_inches='tight', dpi=300)
 # #print(first_num_jac(0.1,0.1))
 
 
-#TODO: plot fixed points on the same diagram
 #TODO: use colours for the fixed points in a neater way
 #TODO: compare different number of iterations
 #TODO: check if the points all make it to the fixed points
@@ -79,3 +55,4 @@ plt.savefig(fname='base case.pdf', bbox_inches='tight', dpi=300)
 #DONE: make a folder called tests with a few simple tests (sanity checks. eg f(x + dx) = f(x) + Mdx, make dx random)
 #DONE: switch to imshow
 #DONE: add simple case (z^3 - 1) for baseline
+#DONE: plot fixed points on the same diagram
