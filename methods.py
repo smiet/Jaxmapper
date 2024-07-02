@@ -348,7 +348,7 @@ def newton_fractal(xy_start, xy_end, x_points, y_points, map, modulo, step, nite
     # return output_grid.
     return output_grid
 
-def apply_finder_to_grid(map, step, startpoints, x_points, y_points, fixedpoints, Niter, **kwargs):
+def apply_finder_to_grid(map, modulo, step, startpoints, x_points, y_points, fixedpoints, Niter, **kwargs):
     """
     apply the step function to a grid of starting points to find the fixed points.
 
@@ -364,15 +364,14 @@ def apply_finder_to_grid(map, step, startpoints, x_points, y_points, fixedpoints
         number of iterations to run the step function
     """
     start_points = startpoints.reshape(y_points,x_points, 2)
-    # genetate the N-step function with kwargs rolled-in
-    test_step = step(map)
-    Nstep = jit(lambda xy: Nmap(test_step, Niter)(xy, **kwargs))
-    # vmap the Nstep 
-    Nstep_vmap = vmap(vmap(Nstep))
-    # apply the Nstep to the grid of starting points
-    end_points = Nstep_vmap(start_points)
+    # initialise fixed point finder to use Niter argument.
+    map_fixed_point_finder = fixed_point_finder(map, modulo, step, Niter)
+    # vmap the fixed_point_finder function. 
+    vmap_fixed_point_finder = vmap(vmap(map_fixed_point_finder))
+    # apply vmap_fixed_point_finder to the grid of starting points.
+    end_points = vmap_fixed_point_finder(start_points)
     # calculate the distance to the fixed points
     distances = np.linalg.norm(end_points[:,:,None,:] - fixedpoints[None, None, :, :], axis=-1)
     # find the index of the closest fixed point
-    closest = np.argmin(distances, axis=-1)
+    closest = np.argmin(distances, axis=-1).T
     return closest
