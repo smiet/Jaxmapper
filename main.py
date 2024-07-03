@@ -39,10 +39,19 @@ starts = grid_starting_points(xy_start, xy_end, x_points, y_points)
 from maps import original_standard_map
 
 map2 = Nmap(standard_map, 2)
-from plotting import plot_newtons_fractal_with_fixed_points
+from plotting import plot_newtons_fractal
 
-# plot_newtons_fractal_with_fixed_points(map2, modulo, step_NM, k=0.5)
+#plot_newtons_fractal(map2, modulo, step_NM, x_points=1000, y_points=1000, k=0.5)
 
+from plotting import plot_poincare_section
+plot_poincare_section(line, 10000, standard_map, k=0.5)
+
+from plotting import plot_fixed_points
+#plot_fixed_points(grid_starting_points((0,0), (1,1), 100, 100), map2, modulo, step_NM, k=0.5)
+
+from plotting import plot_point_trajectories_to_fixed_points
+initial_points = linear_starting_points((0.35,0.75), (0.35, 0.85), npoints=4)
+plot_point_trajectories_to_fixed_points(initial_points, map2, modulo, step_NM, 50, k=0.5)
 
 plt.show()
 
