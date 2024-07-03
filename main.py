@@ -8,6 +8,7 @@ config.update("jax_enable_x64", True)
 from matplotlib import pyplot as plt
 from matplotlib import colormaps
 import numpy as onp
+from scipy import optimize
 
 import math
 
@@ -35,9 +36,18 @@ x_points = 1000
 y_points = 1000
 starts = grid_starting_points(xy_start=(-1,-1), xy_end=(1,1), x_points=x_points, y_points=y_points)
 
+map2 = Nmap(standard_map, 2)
+from plotting import plot_newtons_fractal_with_fixed_points
+
+plot_newtons_fractal_with_fixed_points(map2, modulo, k=0.5)
+plt.savefig("images/newtons_fractal_standard_map_2_k_05.pdf", bbox_inches='tight', dpi=300)
 
 
-
+# test = mapping_vector(basecase)
+# length = lambda xy: np.linalg.norm(test(xy))
+# jac = jacfwd(length)
+# test2 = optimize.minimize(length, np.array([-0.5, -0.1]), method='L-BFGS-B', jac=jac)
+# print(test2)
 
 
 #TODO: find a fix for sympy mod issue (or ask chris if sympy can be abandoned)

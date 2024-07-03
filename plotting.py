@@ -35,31 +35,41 @@ def plot_save_points(points, name='fig', colors='random'):
     plt.ylim([-1.5,1.5])
     fig.savefig(name, bbox_inches='tight', dpi=300)
 
-def plot_newtons_fractal_with_fixed_points():
-    grid = grid_starting_points((-1,-1), (1,1), 10, 10)
+def plot_newtons_fractal_with_fixed_points(map, modulo, **kwargs):
+    grid = grid_starting_points((0,0), (1,1), 100, 100)
 
-    basecase_fixed_points = find_unique_fixed_points(basecase, no_modulo)
-    unique_fixed_points = basecase_fixed_points(grid, step_NM)
+    map_fixed_points = find_unique_fixed_points(map, modulo)
+    # use lambda to roll in the kwargs
+    rolled_fixed_point_map = lambda xy, step: map_fixed_points(xy, step, **kwargs)
+
+    unique_fixed_points = rolled_fixed_point_map(grid, step_NM)
 
     # test = newton_fractal((-1, -1), (1,1), 10, 10, basecase, no_modulo, step_NM, niter=50, test_grid=grid_starting_points((-1,1), (1,1), 10,10))
 
     x_points=1000
     y_points=1000
 
-    starts = grid_starting_points((-1,-1), (1,1), x_points=x_points, y_points=y_points)
+    starts = grid_starting_points((0,0), (1,1), x_points=x_points, y_points=y_points)
 
-    test = apply_finder_to_grid(basecase, no_modulo, step_NM, starts, x_points, y_points, unique_fixed_points, 15)
+    test = apply_finder_to_grid(map, modulo, step_NM, starts, x_points, y_points, unique_fixed_points, 15, **kwargs)
 
-    colour_array = np.array([[114,229,239], [9,123,53], [42,226,130]])
+    colours = np.array([[114,229,239], [9,123,53], [42,226,130], [236,77,216], 
+                        [157,187,230], [62,105,182], [149,200,88], [251,32,118],
+                        [52,245,14], [225,50,25], [8,132,144], [218,164,249], 
+                        [141,78,182], [250,209,57], [162,85,66], [233,191,152],
+                        [111,125,67], [251,137,155], [231,134,7], [140,46,252]])
+
+
+    colour_array = colours[0:unique_fixed_points.shape[0], :]
     colour_list = (colour_array/255).tolist()
 
     test2 = assign_colours_to_grid(test, colour_array)
 
-    plt.imshow(test2, origin = 'lower', extent=(-1, 1, -1, 1))
+    plt.imshow(test2, origin = 'lower', extent=(0, 1, 0, 1))
     plt.scatter(unique_fixed_points[:, 0], unique_fixed_points[:, 1], facecolors=colour_list, marker='o', 
                 edgecolor='black', linewidth = 2)
 
-    plt.title('Newtons Fractal for roots of z^3 - 1')
+    # plt.title('Newtons Fractal for roots of z^3 - 1')
 
 def assign_colours_to_grid(grid, colours):
     """

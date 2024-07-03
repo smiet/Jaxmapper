@@ -366,8 +366,10 @@ def apply_finder_to_grid(map, modulo, step, startpoints, x_points, y_points, fix
     start_points = startpoints.reshape(y_points,x_points, 2)
     # initialise fixed point finder to use Niter argument.
     map_fixed_point_finder = fixed_point_finder(map, modulo, step, Niter)
+    # use lambda to roll in the kwargs
+    rolled_fixed_point_finder = lambda xy: map_fixed_point_finder(xy, **kwargs)
     # vmap the fixed_point_finder function. 
-    vmap_fixed_point_finder = vmap(vmap(map_fixed_point_finder))
+    vmap_fixed_point_finder = vmap(vmap(rolled_fixed_point_finder))
     # apply vmap_fixed_point_finder to the grid of starting points.
     end_points = vmap_fixed_point_finder(start_points)
     # calculate the distance to the fixed points
