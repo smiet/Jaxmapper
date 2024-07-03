@@ -36,12 +36,7 @@ x_points = 1000
 y_points = 1000
 starts = grid_starting_points(xy_start, xy_end, x_points, y_points)
 
-from maps import original_standard_map
-
 map2 = Nmap(standard_map, 2)
-from plotting import plot_newtons_fractal
-
-#plot_newtons_fractal(map2, modulo, step_NM, x_points=1000, y_points=1000, k=0.5)
 
 from plotting import plot_poincare_section
 plot_poincare_section(line, 10000, standard_map, k=0.5)

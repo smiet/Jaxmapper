@@ -56,8 +56,8 @@ def plot_point_trajectories_to_fixed_points(starts, map, modulo, step, niter, **
     for j in range(steps.shape[0]): # for each fixed point
         for i in range(steps.shape[2]): # for each line segment
             plt.plot(steps[j, 0, i:i+2], steps[j, 1, i:i+2],
-                    color='black',
-                    ms=10, marker ='.', markerfacecolor=colors[j][i])
+                    color='blue',
+                    ms=10, marker ='.', markerfacecolor=colors[j][i], markeredgecolor='blue')
 
 def plot_fixed_points(grid, map, modulo, step, **kwargs):
     map_fixed_points = find_unique_fixed_points(map, modulo)
