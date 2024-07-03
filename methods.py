@@ -161,7 +161,7 @@ def fixed_point_finder(map, modulo, step, Niter):
     
     return jit(final)
 
-def fixed_point_trajectory(xy, modulo, step, niter, **kwargs):
+def fixed_point_trajectory(xy, map, modulo, step, niter, **kwargs):
     """
     Takes as input an array of starting points, a map, and a number of iterations.
     Also takes in a modulo function which is based on the modulo of the input map.
@@ -169,20 +169,19 @@ def fixed_point_trajectory(xy, modulo, step, niter, **kwargs):
     Returns an array of shape (ijk) where i indexes the point in starts, j indexes the x/y value, 
     and k indexes the iteration number (0 is the original point before any steps).    
     """
-    delta = step
+
+    step_for_map = step(map)
+    apply_step_for_map = apply_step(step_for_map, modulo)
     # use lambda to "roll-in" the mapping kwargs
-    rolled_delta = lambda xy: delta(xy, **kwargs)
-    # jit rolled_delta and modulo
-    applydelta = jit(rolled_delta)
-    modulo = jit(modulo)
+    rolled_apply_step = lambda xy: apply_step_for_map(xy, **kwargs)
+    # jit rolled_delta
+    applydelta = jit(vmap(rolled_apply_step, in_axes=0))
     # initialize results array
     iterations = [xy, ]
     # calculate mapping of previous mappings niter times
     for _ in range(niter):
         old_point = iterations[-1]
-        step = applydelta(old_point)
-        new_point_full = old_point + step
-        new_point = modulo(new_point_full)
+        new_point = applydelta(old_point)
         iterations.append(new_point)
     # stack into a nice array for returning. 
     return np.stack(iterations, axis=-1)
@@ -286,7 +285,7 @@ def find_unique_fixed_points(map, modulo):
     """
     def final(grid, step, **kwargs):
         # initialise fixed point finder function. higher niter to ensure accuracy.
-        map_fixed_point_finder = fixed_point_finder(map, modulo, step, 25)
+        map_fixed_point_finder = fixed_point_finder(map, modulo, step, 50)
         #initialise array with same shape as grid.
         fixed_points = np.empty_like(grid)
         # write destinations of points in grid into fixed_points array.
@@ -295,8 +294,13 @@ def find_unique_fixed_points(map, modulo):
             # deal with nan points
             if math.isnan(final[0]) == False and math.isnan(final[1]) == False:
                 fixed_points = fixed_points.at[i,:].set(final)
-        # np.unique with rounding to get array of unique fixed points.
-        unique_fixed_points = np.unique(np.round(fixed_points, 5), axis=0)
+        # round fixed points to 5 decimal places.
+        rounded_fixed_points = np.round(fixed_points, 5)
+        # vmap modulo and apply on rounded fixed points.
+        vmapped_modulo = vmap(modulo, in_axes=0)
+        modded_fixed_points = vmapped_modulo(rounded_fixed_points)
+        # np.unique to get array of unique fixed points.
+        unique_fixed_points = np.unique(modded_fixed_points, axis=0)
         
         return unique_fixed_points
     # NOTE: CANT JIT, NOT SURE WHY

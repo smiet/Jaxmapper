@@ -70,6 +70,21 @@ def standard_map(xy, k):
     return np.array([theta, p])
 
 @jit
+def original_standard_map(xy, k):
+    """
+    Definition of the Chirikov Standard Map. Takes in an xy coordinate and a k-value.
+    x and p coordinates are normalised and modulo 1.
+    0.5 is added to the theta coordinate in order to shift the plot up by 0.5.
+    """
+    theta_old = xy[0]
+    p_old = xy[1]
+    # applying standard map on old coordinates to get new coordinates
+    p = np.mod(p_old + (k/(2*np.pi))*np.sin(2*np.pi*theta_old), 1)
+    theta = np.mod(theta_old + p, 1)
+    # return
+    return np.array([theta, p])
+
+@jit
 def standard_map_modulo(xy):
     """
     Returns modulo of arguments based on Standard Map definition.
