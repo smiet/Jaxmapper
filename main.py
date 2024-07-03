@@ -35,31 +35,9 @@ x_points = 1000
 y_points = 1000
 starts = grid_starting_points(xy_start=(-1,-1), xy_end=(1,1), x_points=x_points, y_points=y_points)
 
-# test = newton_fractal(xy_start, xy_end, x_points, y_points, basecase, no_modulo, step_NM, 10)
-# test = np.squeeze(test, axis=-1)
 
-map_fixed_points = find_unique_fixed_points(basecase, no_modulo)
-fixed_points = map_fixed_points(grid, step_NM)
 
-# start_points = starts.reshape(y_points,x_points, 2)
-# # generate the N-step function with kwargs rolled-in
-# map_fixed_point_finder = fixed_point_finder(basecase, no_modulo, step_NM, 15)
-# # vmap the Nstep 
-# vmap_fixed_point_finder = vmap(vmap(map_fixed_point_finder))
-# # apply the Nstep to the grid of starting points
-# end_points = vmap_fixed_point_finder(start_points)
-# # calculate the distance to the fixed points
-# distances = np.linalg.norm(end_points[:,:,None,:] - fixed_points[None, None, :, :], axis=-1)
-# # find the index of the closest fixed point
-# closest = np.argmin(distances, axis=-1).T
-# print(test - closest)
 
-# basecase_fixed_points = find_unique_fixed_points(basecase, no_modulo)
-# fixed_points = basecase_fixed_points(grid, step_NM)
-
-# from methods import apply_finder_to_grid
-# test = apply_finder_to_grid(basecase, step_NM, starts, x_points, y_points, fixed_points, 15)
-# print(test)
 
 
 #TODO: find a fix for sympy mod issue (or ask chris if sympy can be abandoned)
