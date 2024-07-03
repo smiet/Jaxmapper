@@ -59,20 +59,20 @@ def plot_point_trajectories_to_fixed_points(starts, map, modulo, step, niter, **
                     color='blue',
                     ms=10, marker ='.', markerfacecolor=colors[j][i], markeredgecolor='blue')
 
-def plot_fixed_points(grid, map, modulo, step, **kwargs):
+def plot_fixed_points(grid, xy_start, xy_end, map, modulo, step, **kwargs):
     map_fixed_points = find_unique_fixed_points(map, modulo)
     # use lambda to roll in the kwargs
     rolled_fixed_point_map = lambda xy, step: map_fixed_points(xy, step, **kwargs)
     unique_fixed_points = rolled_fixed_point_map(grid, step)
-    expanded_fixed_points, colour_array = expand_fixed_points(unique_fixed_points, 0, 1, 0, 1)
+    expanded_fixed_points, colour_array = expand_fixed_points(unique_fixed_points, xy_start[0], xy_end[0], xy_start[1], xy_end[1])
     colour_list = (colour_array/255).tolist()
 
     plt.scatter(expanded_fixed_points[:, 0], expanded_fixed_points[:, 1], facecolors=colour_list, marker='o', 
                 edgecolor='black', linewidth = 2)
 
-def plot_newtons_fractal(map, modulo, step, x_points, y_points, niter, **kwargs):
+def plot_newtons_fractal(xy_start, xy_end, map, modulo, step, x_points, y_points, niter, **kwargs):
     # initialise grid to find fixed points.
-    grid = grid_starting_points((0,0), (1,1), 100, 100)
+    grid = grid_starting_points(xy_start, xy_end, 100, 100)
     # initialise function to find fixed points.
     map_fixed_points = find_unique_fixed_points(map, modulo)
     # use lambda to roll in the kwargs.
@@ -82,13 +82,13 @@ def plot_newtons_fractal(map, modulo, step, x_points, y_points, niter, **kwargs)
     # use expand_fixed_points to generate expanded list of fixed points as well as corresponding colour array.
     expanded_fixed_points, colour_array = expand_fixed_points(unique_fixed_points_array, 0, 1, 0, 1)
     # initialise grid of starting points for newton's fractal.
-    starts = grid_starting_points((0,0), (1,1), x_points=x_points, y_points=y_points)
+    starts = grid_starting_points(xy_start, xy_end, x_points=x_points, y_points=y_points)
     # use newton's fractal function to get coordinate array with indices of fixed points as elements.
     fixed_point_index_grid = apply_finder_to_grid(map, modulo, step, starts, x_points, y_points, expanded_fixed_points, niter, **kwargs)
     # replace each index with rgb value.
     colour_grid = assign_colours_to_grid(fixed_point_index_grid, colour_array)
     # plot.
-    plt.imshow(colour_grid, origin = 'lower', extent=(0, 1, 0, 1))
+    plt.imshow(colour_grid, origin = 'lower', extent=(xy_start[0], xy_end[0], xy_start[1], xy_end[1]))
 
 def assign_colours_to_grid(grid, colours):
     """

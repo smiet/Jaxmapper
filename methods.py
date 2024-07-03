@@ -53,10 +53,10 @@ def grid_starting_points(xy_start = tuple, xy_end = tuple, x_points = int, y_poi
     Returns an array of shape (ij) where i is the i-th point in the grid and j is the x/y-value.
     Length of i is x_points*y_points.
     """
-    x_start = xy_start[0] + np.sqrt(2)*10e-9
-    y_start = xy_start[1] + np.sqrt(2)*10e-9
-    x_end = xy_end[0] + np.sqrt(2)*10e-9
-    y_end = xy_end[1] + np.sqrt(2)*10e-9
+    x_start = xy_start[0] + np.sqrt(2)*10e-2
+    y_start = xy_start[1] + np.sqrt(2)*10e-2
+    x_end = xy_end[0] + np.sqrt(2)*10e-2
+    y_end = xy_end[1] + np.sqrt(2)*10e-2
     # create arrays for x and y points
     x = np.linspace(x_start, x_end, x_points)
     y = np.linspace(y_start, y_end, y_points)
