@@ -53,10 +53,10 @@ def grid_starting_points(xy_start = tuple, xy_end = tuple, x_points = int, y_poi
     Returns an array of shape (ij) where i is the i-th point in the grid and j is the x/y-value.
     Length of i is x_points*y_points.
     """
-    x_start = xy_start[0] + np.sqrt(2)*10e-2
-    y_start = xy_start[1] + np.sqrt(2)*10e-2
-    x_end = xy_end[0] + np.sqrt(2)*10e-2
-    y_end = xy_end[1] + np.sqrt(2)*10e-2
+    x_start = xy_start[0] + np.sqrt(2)*10e-6
+    y_start = xy_start[1] + np.sqrt(2)*10e-6
+    x_end = xy_end[0] + np.sqrt(2)*10e-6
+    y_end = xy_end[1] + np.sqrt(2)*10e-6
     # create arrays for x and y points
     x = np.linspace(x_start, x_end, x_points)
     y = np.linspace(y_start, y_end, y_points)
@@ -72,6 +72,12 @@ def linear_starting_points(xy_start = tuple, xy_end = tuple, npoints = int):
     """
     x_start, y_start = xy_start
     x_end, y_end = xy_end
+
+    x_start += np.sqrt(2)*10e-6
+    y_start += np.sqrt(2)*10e-6
+    x_end += np.sqrt(2)*10e-6
+    y_end += np.sqrt(2)*10e-6
+
     if x_start == x_end: # if the line is vertical
         # create y array with evenly spaced y_points
         y_array = np.linspace(y_start, y_end, num=npoints)
