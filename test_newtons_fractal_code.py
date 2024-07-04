@@ -16,7 +16,7 @@ from tests import run_test
 from maps import standard_map, sym_standard_map, sym_jac_func, Nmap, basecase, no_modulo
 from methods import grid_starting_points, linear_starting_points, calculate_poincare_section
 from methods import step_NM, step_TNM, apply_step, fixed_point_finder, fixed_point_trajectory, find_unique_fixed_points
-from methods import mapping_vector, theta, test_isotrope, isotrope, theta_comparison
+from methods import theta, test_isotrope, isotrope, theta_comparison
 from methods import newton_fractal
 
 from maps import standard_map_modulo as modulo
@@ -58,7 +58,7 @@ end_points = vmap_fixed_point_finder(grid_points)
 #################################
 ## from fixed_point_trajectory ##
 #################################
-step_for_map = step_NM(standard_map)
+step_for_map = step_NM(standard_map, modulo)
 apply_step_for_map = apply_step(step_for_map, modulo)
 # use lambda to "roll-in" the mapping kwargs
 rolled_apply_step = lambda xy: apply_step_for_map(xy, k=k)
@@ -72,4 +72,20 @@ for _ in range(Niter):
     new_point = applydelta(old_point)
     iterations.append(new_point)
 
-print(np.array(iterations[-1]))
+def standard_map(xy, k):
+    """
+    Definition of the Chirikov Standard Map. Takes in an xy coordinate and a k-value.
+    x and p coordinates are normalised and modulo 1.
+    0.5 is added to the theta coordinate in order to shift the plot up by 0.5.
+    """
+    theta_old = xy[0]
+    p_old = xy[1]
+    # applying standard map on old coordinates to get new coordinates
+    p = p_old + (k/(2*np.pi))*np.sin(2*np.pi*theta_old)
+    theta = theta_old + p + 0.5
+    # return
+    return np.array([theta, p])
+
+k=1
+point = np.array([0.8, 0.8])
+print(standard_map(point, k))

@@ -97,7 +97,7 @@ def linear_starting_points(xy_start = tuple, xy_end = tuple, npoints = int):
         starts = np.stack([x_array,y_array], axis=1)
         return starts
 
-def step_NM(map, method='jax'):
+def step_NM(map, modulo, method='jax'):
     """
     Takes as input a map and a method. 
     Outputs a function 'step' which takes in xy and **kwargs of map, and outputs a Newton step for xy towards a fixed point.
@@ -112,7 +112,7 @@ def step_NM(map, method='jax'):
             rolled_map = lambda xy: map(xy, **kwargs)
             M = jacfwd(rolled_map)(xy)
             A = M - np.eye(2)
-            diff = mapping_vector(rolled_map)
+            diff = mapping_vector_modulo(rolled_map, modulo)
             b = -diff(xy)
             delta = np.linalg.solve(A,b)
             return delta
@@ -159,7 +159,7 @@ def fixed_point_finder(map, modulo, step, Niter):
     Outputs a function which takes in a starting point and outputs the point 
     which is the n-th step away from the starting point after Niter steps.
     """
-    step_for_map = step(map)
+    step_for_map = step(map, modulo)
     apply_step_for_map = apply_step(step_for_map, modulo)
     Nstep = Nmap(apply_step_for_map, Niter)
     def final(xy, **kwargs):
@@ -192,9 +192,22 @@ def fixed_point_trajectory(xy, map, modulo, step, niter, **kwargs):
     # stack into a nice array for returning. 
     return np.stack(iterations, axis=-1)
 
-def mapping_vector(map):
+def mapping_vector_modulo(map, modulo):
     """
     Returns a function which calculates the difference between point xy and the mapping of xy.
+    Then take the modulo.
+    modulo(map(xy) - xy)
+    """
+    def diff(start, **kwargs):
+        end = map(start, **kwargs)
+        vec = modulo(np.subtract(end,start))
+        return vec
+    return jit(diff)
+
+def mapping_vector_full(map):
+    """
+    Returns a function which calculates the difference between point xy and the mapping of xy.
+    The mapping of xy is NOT modulo version.
     map(xy) - xy
     """
     def diff(start, **kwargs):
@@ -208,7 +221,7 @@ def theta(map):
     Takes as input a map.
     Outputs a function which accepts xy and kwargs as input. This function calculates the angle between map(xy)-xy and the horizontal.
     """
-    mapping_vector_fun = mapping_vector(map)
+    mapping_vector_fun = mapping_vector_full(map)
     def final(xy, **kwargs):
         x, y = mapping_vector_fun(xy, **kwargs)
         return np.arctan2(y, x)

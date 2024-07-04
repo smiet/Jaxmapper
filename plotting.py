@@ -45,7 +45,7 @@ def plot_poincare_section(starts, niter, map, **kwargs):
     poincare = calculate_poincare_section(starts, niter, map, **kwargs)
     for i in range(poincare.shape[0]):
         plt.scatter(poincare[i,0,:], poincare[i,1,:], 
-                    color='gray', s=0.0001, marker ='.')
+                    color='black', s=0.0001, marker ='.')
 
 def plot_point_trajectories_to_fixed_points(starts, map, modulo, step, niter, **kwargs):
     """
