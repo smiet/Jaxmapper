@@ -360,9 +360,9 @@ def apply_finder_to_grid(map, modulo, step, startpoints, x_points, y_points, fix
     step: function
         step function to be applied to the points in the grid startpoints
         (genterated from a map and modulo using step_NM f.ex.)
-    startpoints: NxNx2 array
+    startpoints: Nx2 array
         grid of starting points
-    fixedpoints: Nx2 array
+    fixedpoints: Kx2 array
         fixed points that you have pre-computed
     Niter: int
         number of iterations to run the step function
