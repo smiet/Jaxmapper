@@ -21,31 +21,26 @@ from methods import newton_fractal
 
 from maps import standard_map_modulo as modulo
 
-starts = grid_starting_points(xy_start=(-1,-1), xy_end=(1,1), x_points=10, y_points=10)
+starts = grid_starting_points(xy_start=(0,0), xy_end=(1,1), x_points=10, y_points=10)
 line = linear_starting_points(xy_start=(0.5,0), xy_end=(0.5,1), npoints=500)
 # starts2 = linear_starting_points(xy_start=(0.6,0), xy_end=(0.6,1), npoints=1000)
 # starts3 = linear_starting_points(xy_start=(0.4,0), xy_end=(0.4,1), npoints=1000)
 # starts = np.append(starts1, starts2, axis=0)
 # starts = np.append(starts, starts3, axis=0)
 
-grid = grid_starting_points((0,0), (1,1), 10, 10)
+#map2 = Nmap(standard_map, 2)
 
-xy_start = (0,0)
-xy_end = (1,1)
-x_points = 1000
-y_points = 1000
-starts = grid_starting_points(xy_start, xy_end, x_points, y_points)
+#point = np.array([-0.1, 0.4])
 
-map2 = Nmap(standard_map, 2)
+#test = step_NM(map2)
+#test = apply_step(step_NM(map2), modulo)
 
+#print(test(point, k=0.5))
 
-# plt.savefig('images/newtons_fractal_standard_map_2_k_05.pdf', bbox_inches='tight', dpi=300)
-
-#test = find_unique_fixed_points(map2, modulo)
-#test2 = test(grid, step_NM, k=0.5)
-#print(test2)
-
-
+from plotting import plot_newtons_fractal, plot_poincare_section
+plot_newtons_fractal((0,0), (1,1), standard_map, modulo, step_NM, 100, 100, 15, k=0.5)
+#plot_poincare_section(line, 10000, standard_map, k=0.5)
+plt.show()
 
 
 # test = mapping_vector(basecase)

@@ -9,14 +9,9 @@ from matplotlib import pyplot as plt
 from matplotlib import colormaps
 import numpy as onp
 
-import math
-
-from tests import run_test
-from maps import standard_map, sym_standard_map, sym_jac_func, Nmap, basecase, no_modulo
 from methods import grid_starting_points, linear_starting_points, calculate_poincare_section
 from methods import step_NM, apply_step, fixed_point_finder, fixed_point_trajectory, find_unique_fixed_points
-from methods import mapping_vector, theta, test_isotrope, isotrope, theta_comparison
-from methods import newton_fractal, apply_finder_to_grid
+from methods import apply_finder_to_grid
 
 from maps import standard_map_modulo as modulo
 
@@ -36,12 +31,38 @@ def plot_save_points(points, name='fig', colors='random'):
     fig.savefig(name, bbox_inches='tight', dpi=300)
 
 def plot_poincare_section(starts, niter, map, **kwargs):
+    """
+    Produces plot of Poincare Section.
+
+    Parameters:
+    starts: Nx2 array
+        line of starting points
+    niter: int
+        number of iterations of map
+    map: function
+        map which will be used 
+    """
     poincare = calculate_poincare_section(starts, niter, map, **kwargs)
     for i in range(poincare.shape[0]):
         plt.scatter(poincare[i,0,:], poincare[i,1,:], 
                     color='gray', s=0.0001, marker ='.')
 
 def plot_point_trajectories_to_fixed_points(starts, map, modulo, step, niter, **kwargs):
+    """
+    Produces plot of lines connecting the start points to their steps all the way to their final points (which ideally are the fixed points of the map).
+
+    Parameters:
+    starts: Nx2 array
+        starting points to plot trajectories for. this function and plot are not ideal for a large number of starting points.
+    map: function
+        the map to investigate
+    modulo: function
+        the modulo linked to the map
+    step: function
+        the type of step used for the steps to the fixed points
+    niter: int
+        the number of iterations
+    """
     steps = fixed_point_trajectory(starts, map, modulo, step, niter, **kwargs)
 
     cmap1 = colormaps['gist_heat']
@@ -60,6 +81,25 @@ def plot_point_trajectories_to_fixed_points(starts, map, modulo, step, niter, **
                     ms=10, marker ='.', markerfacecolor=colors[j][i], markeredgecolor='blue')
 
 def plot_fixed_points(grid, xy_start, xy_end, map, modulo, step, **kwargs):
+    """
+    Produces plot of fixed points of map.
+
+    Parameters:
+    grid: Nx2 array
+        grid of starting points. doesn't need to be super high resolution.
+    xy_start: tuple
+        coordinates of lower-left corner of grid.
+    xy_end: tuple
+        coordinates of upper-right corner of grid.    
+    map: function
+        map which will be used 
+    modulo: function
+        the modulo linked to the map
+    step: function
+        the type of step used for the steps to the fixed points
+    niter: int
+        the number of iterations
+    """
     map_fixed_points = find_unique_fixed_points(map, modulo)
     # use lambda to roll in the kwargs
     rolled_fixed_point_map = lambda xy, step: map_fixed_points(xy, step, **kwargs)
@@ -70,7 +110,28 @@ def plot_fixed_points(grid, xy_start, xy_end, map, modulo, step, **kwargs):
     plt.scatter(expanded_fixed_points[:, 0], expanded_fixed_points[:, 1], facecolors=colour_list, marker='o', 
                 edgecolor='black', linewidth = 2)
 
-def plot_newtons_fractal(xy_start, xy_end, map, modulo, step, x_points, y_points, niter, **kwargs):
+def plot_newtons_fractal(xy_start, xy_end, x_points, y_points, map, modulo, step, niter, **kwargs):
+    """
+    Produces plot of Newton's fractal of map.
+
+    Parameters:
+    xy_start: tuple
+        coordinates of lower-left corner of grid.
+    xy_end: tuple
+        coordinates of upper-right corner of grid.    
+    x_points: int
+        number of columns in grid
+    y_points: int
+        number of rows in grid
+    map: function
+        map which will be used 
+    modulo: function
+        the modulo linked to the map
+    step: function
+        the type of step used for the steps to the fixed points
+    niter: int
+        the number of iterations
+    """
     # initialise grid to find fixed points.
     grid = grid_starting_points(xy_start, xy_end, 100, 100)
     # initialise function to find fixed points.
@@ -80,7 +141,7 @@ def plot_newtons_fractal(xy_start, xy_end, map, modulo, step, x_points, y_points
     # use map_fixed_points and find fixed points.
     unique_fixed_points_array = rolled_fixed_point_map(grid, step)
     # use expand_fixed_points to generate expanded list of fixed points as well as corresponding colour array.
-    expanded_fixed_points, colour_array = expand_fixed_points(unique_fixed_points_array, 0, 1, 0, 1)
+    expanded_fixed_points, colour_array = expand_fixed_points(unique_fixed_points_array, xy_start[0], xy_end[0], xy_start[1], xy_end[1])
     # initialise grid of starting points for newton's fractal.
     starts = grid_starting_points(xy_start, xy_end, x_points=x_points, y_points=y_points)
     # use newton's fractal function to get coordinate array with indices of fixed points as elements.
@@ -92,6 +153,8 @@ def plot_newtons_fractal(xy_start, xy_end, map, modulo, step, x_points, y_points
 
 def assign_colours_to_grid(grid, colours):
     """
+    Generates an MxNx3 array where each MxN coordinate has an RGB value attached to it.
+    
     Parameters:
     grid: MxN array
         array outputted from apply_finder_to_grid. 

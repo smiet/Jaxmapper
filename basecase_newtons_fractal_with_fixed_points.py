@@ -18,7 +18,7 @@ from plotting import plot_newtons_fractal, plot_fixed_points
 grid = grid_starting_points(xy_start=(-1,-1), xy_end=(1,1), x_points=10, y_points=10)
 initial_points = linear_starting_points((0.35,0.75), (0.35, 0.85), npoints=4)
 
-plot_newtons_fractal((-1,-1), (1,1), basecase, no_modulo, step_NM, 1000, 1000, 15)
+plot_newtons_fractal((-1,-1), (1,1), 1000, 1000, basecase, no_modulo, step_NM, 15)
 plot_fixed_points(grid, (-1,-1), (1,1), basecase, no_modulo, step_NM)
 
 plt.xlabel(r'$x$')
