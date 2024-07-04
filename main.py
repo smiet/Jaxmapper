@@ -16,7 +16,7 @@ from tests import run_test
 from maps import standard_map, sym_standard_map, sym_jac_func, Nmap, basecase, no_modulo
 from methods import grid_starting_points, linear_starting_points, calculate_poincare_section
 from methods import step_NM, step_TNM, apply_step, fixed_point_finder, fixed_point_trajectory, find_unique_fixed_points
-from methods import mapping_vector, theta, test_isotrope, isotrope, theta_comparison
+from methods import theta, test_isotrope, isotrope, theta_comparison
 from methods import newton_fractal
 
 from maps import standard_map_modulo as modulo
@@ -37,10 +37,13 @@ line = linear_starting_points(xy_start=(0.5,0), xy_end=(0.5,1), npoints=500)
 
 #print(test(point, k=0.5))
 
-from plotting import plot_newtons_fractal, plot_poincare_section
-plot_newtons_fractal((0,0), (1,1), standard_map, modulo, step_NM, 100, 100, 15, k=0.5)
-#plot_poincare_section(line, 10000, standard_map, k=0.5)
-plt.show()
+k=1
+
+map2 = Nmap(standard_map, 2)
+
+test = find_unique_fixed_points(map2, modulo)
+test2 = test(starts, step_NM, k=k)
+print(test2.shape)
 
 
 # test = mapping_vector(basecase)

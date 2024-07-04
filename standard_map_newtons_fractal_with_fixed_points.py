@@ -21,9 +21,9 @@ initial_points = linear_starting_points((0.35,0.75), (0.35, 0.85), npoints=4)
 
 k=1
 
-map2 = Nmap(original_standard_map, 2)
+map2 = Nmap(standard_map, 2)
 
-plot_newtons_fractal((0,0), (1,1), 1000, 1000, map2, modulo, step_NM, 15, k=k)
+plot_newtons_fractal((0,0), (1,1), 100, 100, map2, modulo, step_NM, 15, k=k)
 plot_fixed_points(grid, (0,0), (1,1), map2, modulo, step_NM, k=k)
 
 plt.xlabel(r'$\theta$')

@@ -176,7 +176,7 @@ def fixed_point_trajectory(xy, map, modulo, step, niter, **kwargs):
     and k indexes the iteration number (0 is the original point before any steps).    
     """
 
-    step_for_map = step(map)
+    step_for_map = step(map, modulo)
     apply_step_for_map = apply_step(step_for_map, modulo)
     # use lambda to "roll-in" the mapping kwargs
     rolled_apply_step = lambda xy: apply_step_for_map(xy, **kwargs)
@@ -199,8 +199,8 @@ def mapping_vector_modulo(map, modulo):
     modulo(map(xy) - xy)
     """
     def diff(start, **kwargs):
-        end = map(start, **kwargs)
-        vec = modulo(np.subtract(end,start))
+        end = modulo(map(start, **kwargs))
+        vec = np.subtract(end,start)
         return vec
     return jit(diff)
 
