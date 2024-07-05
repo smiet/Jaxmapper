@@ -9,17 +9,17 @@ config.update("jax_enable_x64", True)
 from matplotlib import pyplot as plt
 import numpy as onp
 
-from maps import Nmap, standard_nontwist, sym_jac_func
+from maps import Nmap, sym_jac_func, no_modulo
 
-def calculate_poincare_section(starts, niter, mapping=standard_nontwist, **kwargs):
+def calculate_poincare_section(starts, niter, map, modulo, **kwargs):
     """
     Calculate a Poincare section of a mapping with parameters a and b.
     Iterate niter times.
     Returns an array of shape (ijk) where i indexes the point in starts, j indexes the x/y value, 
     and k indexes the iteration number (0 is the original point before any mappings).    
     """
-    # use lambda to "roll-in" the mapping kwargs
-    rolled_map = lambda xy: mapping(xy, **kwargs)
+    # use lambda to "roll-in" the mapping kwargs and include modulo
+    rolled_map = lambda xy: modulo(map(xy, **kwargs))
     # use vmap to create a function from all starts to all mapped points
     applymap = jit(vmap(rolled_map, in_axes=0))
     # initialize results array
@@ -97,77 +97,121 @@ def linear_starting_points(xy_start = tuple, xy_end = tuple, npoints = int):
         starts = np.stack([x_array,y_array], axis=1)
         return starts
 
-def step_NM(map, modulo, method='jax'):
-    """
-    Takes as input a map and a method. 
-    Outputs a function 'step' which takes in xy and **kwargs of map, and outputs a Newton step for xy towards a fixed point.
-    Ensure that the method chosen is appropriate for the map (i.e. if method=sympy then map must be a Sympy map)!
-    """
-    if method=='jax':
-        def step(xy, **kwargs):
-            """
-            Function which returns the step from xy towards the fixed point (to first order).
-            """
-            # use lambda to "roll-in" the mapping kwargs
-            rolled_map = lambda xy: map(xy, **kwargs)
-            M = jacfwd(rolled_map)(xy)
-            A = M - np.eye(2)
-            diff = mapping_vector_modulo(rolled_map, modulo)
-            b = -diff(xy)
-            delta = np.linalg.solve(A,b)
-            return delta
-        return jit(step)
-    elif method=='sympy':
-        def step(xy, xmod, ymod, **kwargs):
-            """
-            Function which returns the step from xy towards the fixed point (to first order).
-            xmod: divisor of modulo operation of x 
-            ymod: divisior of modulo operation of y
-            xmod and ymod are necessary for sympy as jacobian operation doesn't work on modulo operation in sympy.
-            Put a large number for xmod/ymod if it doesn't need to be modded.
-            """
-            x, y = sym.symbols('x y')
-            sym_expr = map(**kwargs)
-            M = sym_jac_func(sym_expr)(xy)
-            A = M - np.eye(2)
-            f = sym.lambdify([x,y], sym_expr, 'numpy')(xy[0], xy[1])
-            # the f above is a (ij) array where i is the x/y-value and j is a redudant axis of length 1.
-            # so we flatten f.
-            f = f.flatten()
-            f = np.array([np.mod(f[0], xmod), np.mod(f[1], ymod)])
-            b = xy-f
-            delta = np.linalg.solve(A,b)
-            ### NOTE: NO JIT APPLIED HERE AS IT DOESN'T WORK WITH SYMPY.
-            return delta
-        return step
-    else:
-        print("Invalid method!")
-
 def apply_step(step, modulo):
     """
-    Takes as input a step function 'step' and a modulo linked to the map.
-    Outputs a function which takes in an xy and returns xy + step(xy).
+    Outputs a function which takes in an xy and returns modulo(xy + step(xy)).
+
+    Parameters:
+    step: function
+        step function which is applied
+    modulo: function
+        modulo linked to the map 
     """
     def final(xy, **kwargs):
         return modulo(xy + step(xy, **kwargs))
-    
     return jit(final)
 
-def fixed_point_finder(map, modulo, step, Niter):
+def step_NM(map, modulo):
+    """
+    Outputs a function 'step' which takes in xy and **kwargs of map, and outputs a Newton step for xy towards a fixed point.
+    
+    Parameters:
+    map: function
+        map to calculate the Newton step of
+    modulo: function
+        modulo linked to the map. modulo is applied on map(xy) and then mod(map(xy))-xy is calculated
+    method: string
+        which method to use. choose between 'jax' or 'sympy'
+    """
+    def step(xy, **kwargs):
+        """
+        Function which returns the step from xy towards the fixed point (to first order).
+        """
+        # use lambda to "roll-in" the mapping kwargs
+        rolled_map = lambda xy: map(xy, **kwargs)
+        M = jacfwd(rolled_map)(xy)
+        A = M - np.eye(2)
+        #diff = mapping_vector_modulo(rolled_map, modulo)
+        diff = mapping_vector(rolled_map, modulo)
+        b = -diff(xy)
+        delta = np.linalg.solve(A,b)
+        return delta
+    return jit(step)
+    
+def step_NM_sym(map):    
+    """
+    Outputs a function 'step' which takes in xy and **kwargs of map, and outputs a Newton step for xy towards a fixed point.
+    
+    Parameters:
+    map: sympy function
+        map to calculate the Newton step of
+    modulo: function
+        modulo linked to the map
+    method: string
+        which method to use. choose between 'jax' or 'sympy'
+    """
+    def step(xy, xmod, ymod, **kwargs):
+        """
+        Function which returns the step from xy towards the fixed point (to first order).
+        xmod: divisor of modulo operation of x 
+        ymod: divisior of modulo operation of y
+        xmod and ymod are necessary for sympy as jacobian operation doesn't work on modulo operation in sympy.
+        Put a large number for xmod/ymod if it doesn't need to be modded.
+        """
+        x, y = sym.symbols('x y')
+        sym_expr = map(**kwargs)
+        M = sym_jac_func(sym_expr)(xy)
+        A = M - np.eye(2)
+        f = sym.lambdify([x,y], sym_expr, 'numpy')(xy[0], xy[1])
+        # the f above is a (ij) array where i is the x/y-value and j is a redudant axis of length 1.
+        # so we flatten f.
+        f = f.flatten()
+        f = np.array([np.mod(f[0], xmod), np.mod(f[1], ymod)])
+        b = xy-f
+        delta = np.linalg.solve(A,b)
+        ### NOTE: NO JIT APPLIED HERE AS IT DOESN'T WORK WITH SYMPY.
+        return delta
+    return step
+
+def step_TNM(map, modulo):
+    """
+    Outputs a function 'step' which takes in xy and **kwargs of map, and outputs a Topological Newton step for xy towards a fixed point.
+    
+    Parameters:
+    map: function
+        map to calculate the Newton step of
+    modulo: function
+        modulo linked to the map
+    """
+    map_isotrope = isotrope(map)
+    def step(xy, **kwargs):
+        """
+        Function which returns the step from xy towards the fixed point (to first order).
+        """
+        delta = map_isotrope(xy, **kwargs)
+        length = np.linalg.norm(delta)
+        if length > 0:
+            delta = (1/length)**2 * delta
+            return delta
+        elif length == 0:
+            return np.array([0,0])
+    return jit(step)
+
+def fixed_point_finder(map, map_modulo, step, step_modulo, Niter):
     """
     Takes as input a map and its modulo, a step function, and a number of iterations 'Niter'.
     Outputs a function which takes in a starting point and outputs the point 
     which is the n-th step away from the starting point after Niter steps.
     """
-    step_for_map = step(map, modulo)
-    apply_step_for_map = apply_step(step_for_map, modulo)
+    step_for_map = step(map, step_modulo)
+    apply_step_for_map = apply_step(step_for_map, map_modulo)
     Nstep = Nmap(apply_step_for_map, Niter)
     def final(xy, **kwargs):
         return Nstep(xy, **kwargs)
     
     return jit(final)
 
-def fixed_point_trajectory(xy, map, modulo, step, niter, **kwargs):
+def fixed_point_trajectory(xy, map, map_modulo, step, step_modulo, niter, **kwargs):
     """
     Takes as input an array of starting points, a map, and a number of iterations.
     Also takes in a modulo function which is based on the modulo of the input map.
@@ -176,8 +220,8 @@ def fixed_point_trajectory(xy, map, modulo, step, niter, **kwargs):
     and k indexes the iteration number (0 is the original point before any steps).    
     """
 
-    step_for_map = step(map, modulo)
-    apply_step_for_map = apply_step(step_for_map, modulo)
+    step_for_map = step(map, step_modulo)
+    apply_step_for_map = apply_step(step_for_map, map_modulo)
     # use lambda to "roll-in" the mapping kwargs
     rolled_apply_step = lambda xy: apply_step_for_map(xy, **kwargs)
     # jit rolled_delta
@@ -192,27 +236,14 @@ def fixed_point_trajectory(xy, map, modulo, step, niter, **kwargs):
     # stack into a nice array for returning. 
     return np.stack(iterations, axis=-1)
 
-def mapping_vector_modulo(map, modulo):
+def mapping_vector(map, modulo):
     """
-    Returns a function which calculates the difference between point xy and the mapping of xy.
-    Then take the modulo.
-    modulo(map(xy) - xy)
+    Returns a function which calculates the difference between point xy and the modulo of the mapping of xy.
+    modulo(map(xy)) - xy
     """
     def diff(start, **kwargs):
         end = modulo(map(start, **kwargs))
-        vec = np.subtract(end,start)
-        return vec
-    return jit(diff)
-
-def mapping_vector_full(map):
-    """
-    Returns a function which calculates the difference between point xy and the mapping of xy.
-    The mapping of xy is NOT modulo version.
-    map(xy) - xy
-    """
-    def diff(start, **kwargs):
-        end = map(start, **kwargs)
-        vec = np.subtract(end,start)
+        vec = end - start
         return vec
     return jit(diff)
 
@@ -221,7 +252,7 @@ def theta(map):
     Takes as input a map.
     Outputs a function which accepts xy and kwargs as input. This function calculates the angle between map(xy)-xy and the horizontal.
     """
-    mapping_vector_fun = mapping_vector_full(map)
+    mapping_vector_fun = mapping_vector(map, no_modulo)
     def final(xy, **kwargs):
         x, y = mapping_vector_fun(xy, **kwargs)
         return np.arctan2(y, x)
@@ -263,25 +294,6 @@ def test_isotrope(map):
         return small_isotrope
     return step_TNM
 
-def step_TNM(map):
-    """
-    Takes as input a map. 
-    Outputs a function 'step' which takes in xy and **kwargs of map, and outputs a Topological Newton step for xy towards a fixed point.
-    """
-    map_isotrope = isotrope(map)
-    def step(xy, **kwargs):
-        """
-        Function which returns the step from xy towards the fixed point (to first order).
-        """
-        delta = map_isotrope(xy, **kwargs)
-        length = np.linalg.norm(delta)
-        if length > 0:
-            delta = (1/length)**2 * delta
-            return delta
-        elif length == 0:
-            return np.array([0,0])
-    return jit(step)
-
 def theta_comparison(map):
     """
     Takes a map as input.
@@ -297,26 +309,31 @@ def theta_comparison(map):
         return new_theta - old_theta
     return final
 
-def find_unique_fixed_points(map, modulo):
+def find_unique_fixed_points(map, map_modulo):
     """
     Returns a function which returns an array containing the fixed points of the map.
     Array is of shape (ij) where i indexes the fixed points and j indexes the x/y-value.
     """
-    def final(grid, step, **kwargs):
+    def final(grid, step, step_modulo, **kwargs):
         # initialise fixed point finder function. higher niter to ensure accuracy.
-        map_fixed_point_finder = fixed_point_finder(map, modulo, step, 50)
-        #initialise array with same shape as grid.
-        fixed_points = np.empty_like(grid)
+        map_fixed_point_finder = fixed_point_finder(map, map_modulo, step, step_modulo, Niter=50)
+        # roll in kwargs for map_fixed_point_finder.
+        rolled_fixed_point_finder = lambda xy: map_fixed_point_finder(xy, **kwargs)
+        # vmap map_fixed_point_finder.
+        vmapped_fixed_point_finder = vmap(rolled_fixed_point_finder, in_axes=0)
         # write destinations of points in grid into fixed_points array.
-        for i in range(grid.shape[0]):
-            final = map_fixed_point_finder(grid[i,:], **kwargs)
-            # deal with nan points
-            if math.isnan(final[0]) == False and math.isnan(final[1]) == False:
-                fixed_points = fixed_points.at[i,:].set(final)
+        fixed_points = vmapped_fixed_point_finder(grid)
+        
+        # for i in range(grid.shape[0]):
+        #     final = map_fixed_point_finder(grid[i,:], **kwargs)
+        #     # deal with nan points
+        #     if math.isnan(final[0]) == False and math.isnan(final[1]) == False:
+        #         fixed_points = fixed_points.at[i,:].set(final)
+        
         # round fixed points to 5 decimal places.
         rounded_fixed_points = np.round(fixed_points, 5)
         # vmap modulo and apply on rounded fixed points.
-        vmapped_modulo = vmap(modulo, in_axes=0)
+        vmapped_modulo = vmap(map_modulo, in_axes=0)
         modded_fixed_points = vmapped_modulo(rounded_fixed_points)
         # np.unique to get array of unique fixed points.
         unique_fixed_points = np.unique(modded_fixed_points, axis=0)
@@ -371,7 +388,7 @@ def newton_fractal(xy_start, xy_end, x_points, y_points, map, modulo, step, nite
     # return output_grid.
     return output_grid
 
-def apply_finder_to_grid(map, modulo, step, startpoints, x_points, y_points, fixedpoints, Niter, **kwargs):
+def apply_finder_to_grid(map, map_modulo, step, step_modulo, startpoints, x_points, y_points, fixedpoints, Niter, **kwargs):
     """
     apply the step function to a grid of starting points to find the fixed points.
 
@@ -388,7 +405,7 @@ def apply_finder_to_grid(map, modulo, step, startpoints, x_points, y_points, fix
     """
     start_points = startpoints.reshape(y_points,x_points, 2)
     # initialise fixed point finder to use Niter argument.
-    map_fixed_point_finder = fixed_point_finder(map, modulo, step, Niter)
+    map_fixed_point_finder = fixed_point_finder(map, map_modulo, step, step_modulo, Niter)
     # use lambda to roll in the kwargs
     rolled_fixed_point_finder = lambda xy: map_fixed_point_finder(xy, **kwargs)
     # vmap the fixed_point_finder function. 

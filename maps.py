@@ -19,6 +19,17 @@ def standard_nontwist(xy, a=0.51, b=0.31):
     return np.array([x,y])
 
 @jit
+def standard_nontwist_modulo(xy):
+    """
+    Returns modulo of arguments based on Standard Nontwist Map definition.
+    """
+    x = xy[0]
+    y=xy[1]
+
+    x = np.mod(x, 1)
+    return np.array([x, y])
+
+@jit
 def tokamap(xy, K=0, w=0.666, w0=0.7, w1=0.3):
     """
     standard nontwist map.
@@ -33,6 +44,16 @@ def tokamap(xy, K=0, w=0.666, w0=0.7, w1=0.3):
     theta = np.mod(theta_old + W - (K/((2*np.pi)**2) * (1 + psi)**2)*np.cos(2*np.pi*theta_old), 1)
     #theta = np.mod(xy[0] + a*(1 - y**2), 1)
     return np.array([theta,psi])
+
+@jit
+def tokamap_modulo(xy):
+    """
+    Returns modulo of arguments based on Tokamap definition.
+    """
+    theta = xy[0]
+    psi=xy[1]
+    theta = np.mod(theta, 1)
+    return np.array([theta, psi])
 
 @jit
 def basecase(xy):
@@ -64,8 +85,8 @@ def standard_map(xy, k):
     theta_old = xy[0]
     p_old = xy[1]
     # applying standard map on old coordinates to get new coordinates
-    p = np.mod(p_old + (k/(2*np.pi))*np.sin(2*np.pi*theta_old), 1)
-    theta = np.mod(theta_old + p + 0.5, 1)
+    p = p_old + (k/(2*np.pi))*np.sin(2*np.pi*theta_old)
+    theta = theta_old + p + 0.5
     # return
     return np.array([theta, p])
 
@@ -79,8 +100,8 @@ def original_standard_map(xy, k):
     theta_old = xy[0]
     p_old = xy[1]
     # applying standard map on old coordinates to get new coordinates
-    p = np.mod(p_old + (k/(2*np.pi))*np.sin(2*np.pi*theta_old), 1)
-    theta = np.mod(theta_old + p, 1)
+    p = p_old + (k/(2*np.pi))*np.sin(2*np.pi*theta_old)
+    theta = theta_old + p
     # return
     return np.array([theta, p])
 
@@ -94,6 +115,17 @@ def standard_map_modulo(xy):
 
     theta = np.mod(theta, 1)
     p = np.mod(p, 1)
+    return np.array([theta, p])
+
+@jit
+def standard_map_theta_modulo(xy):
+    """
+    Converts theta to theta mod 1. p remains unchanged.
+    """
+    theta = xy[0]
+    p=xy[1]
+
+    theta = np.mod(theta, 1)
     return np.array([theta, p])
 
 def sym_standard_map(k):

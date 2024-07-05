@@ -20,8 +20,9 @@ from methods import theta, test_isotrope, isotrope, theta_comparison
 from methods import newton_fractal
 
 from maps import standard_map_modulo as modulo
+from maps import standard_map_theta_modulo as no_p_mod
 
-starts = grid_starting_points(xy_start=(0,0), xy_end=(1,1), x_points=10, y_points=10)
+starts = grid_starting_points(xy_start=(-1,-1), xy_end=(1,1), x_points=10, y_points=10)
 line = linear_starting_points(xy_start=(0.5,0), xy_end=(0.5,1), npoints=500)
 # starts2 = linear_starting_points(xy_start=(0.6,0), xy_end=(0.6,1), npoints=1000)
 # starts3 = linear_starting_points(xy_start=(0.4,0), xy_end=(0.4,1), npoints=1000)
@@ -41,9 +42,9 @@ k=1
 
 map2 = Nmap(standard_map, 2)
 
-test = find_unique_fixed_points(map2, modulo)
-test2 = test(starts, step_NM, k=k)
-print(test2.shape)
+test = find_unique_fixed_points(basecase, no_modulo)
+test2 = test(starts, step_NM, no_modulo)
+print(test2)
 
 
 # test = mapping_vector(basecase)

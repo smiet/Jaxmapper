@@ -12,14 +12,10 @@ import numpy as onp
 from tests import run_test
 from maps import standard_map, sym_standard_map, sym_jac_func, Nmap, no_modulo
 from maps import standard_map_modulo as modulo
-from methods import grid_starting_points, linear_starting_points, step_NM
-
-from plotting import plot_newtons_fractal, plot_point_trajectories_to_fixed_points
+from methods import grid_starting_points, linear_starting_points, step_NM, apply_step_no_modulo
 
 k=1
 
-
-map2 = Nmap(standard_map, 2)
 
 ##########################
 ## PLOT NEWTONS FRACTAL ##
@@ -29,7 +25,7 @@ from plotting import expand_fixed_points, assign_colours_to_grid
 # initialise grid to find fixed points.
 grid = grid_starting_points(xy_start=(0,0), xy_end=(1,1), x_points=100, y_points=100)
 # initialise function to find fixed points.
-map_fixed_points = find_unique_fixed_points(map=standard_map, modulo=no_modulo)
+map_fixed_points = find_unique_fixed_points(map=standard_map, modulo=modulo)
 # use map_fixed_points and find fixed points.
 unique_fixed_points_array = map_fixed_points(grid, step=step_NM, k=k)
 # use expand_fixed_points to generate expanded list of fixed points as well as corresponding colour array.
@@ -57,13 +53,26 @@ plt.imshow(colour_grid, origin = 'lower', extent=(0, 1, 0, 1))
 ###################################
 ## PLOT FIXED POINT TRAJECTORIES ##
 ###################################
-from methods import fixed_point_trajectory
-starts = linear_starting_points((0.6,0.08), (0.9, 0.08), npoints=4)
-steps = fixed_point_trajectory(xy=starts, 
-                               map=standard_map, modulo=modulo,
-                               step=step_NM, 
-                               niter=1,
-                               k=k)
+niter = 1
+initial_points_1 = linear_starting_points((0.6,0.2), (0.9, 0.2), npoints=10)
+initial_points_2 = linear_starting_points((0.6,0.1), (0.9, 0.1), npoints=10)
+initial_points = np.append(initial_points_1, initial_points_2, axis=0)
+
+step_for_map = step_NM(standard_map, no_modulo)
+apply_step_for_map = apply_step_no_modulo(step_for_map)
+# use lambda to "roll-in" the mapping kwargs
+rolled_apply_step = lambda xy: apply_step_for_map(xy, k=k)
+# jit rolled_delta
+applydelta = jit(vmap(rolled_apply_step, in_axes=0))
+# initialize results array
+iterations = [initial_points, ]
+# calculate mapping of previous mappings niter times
+for _ in range(niter):
+    old_point = iterations[-1]
+    new_point = applydelta(old_point)
+    iterations.append(new_point)
+
+steps = np.stack(iterations, axis=-1)
 
 cmap = colormaps['PiYG']
 colors = cmap(np.linspace(0, 1, steps.shape[0]))

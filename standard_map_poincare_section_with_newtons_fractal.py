@@ -10,16 +10,15 @@ from matplotlib import colormaps
 import numpy as onp
 
 from tests import run_test
-from maps import standard_map, sym_standard_map, sym_jac_func, Nmap, no_modulo
-from maps import standard_map_modulo as modulo
-from methods import grid_starting_points, linear_starting_points, step_NM
+from maps import standard_map, Nmap, original_standard_map
+from methods import grid_starting_points, linear_starting_points
+from methods import step_NM, calculate_poincare_section
 
-from plotting import plot_newtons_fractal, plot_point_trajectories_to_fixed_points
+from maps import standard_map_modulo as modulo
 
 k=1
 
-
-map2 = Nmap(standard_map, 2)
+map6 = Nmap(standard_map, 6)
 
 ##########################
 ## PLOT NEWTONS FRACTAL ##
@@ -29,7 +28,7 @@ from plotting import expand_fixed_points, assign_colours_to_grid
 # initialise grid to find fixed points.
 grid = grid_starting_points(xy_start=(0,0), xy_end=(1,1), x_points=100, y_points=100)
 # initialise function to find fixed points.
-map_fixed_points = find_unique_fixed_points(map=standard_map, modulo=no_modulo)
+map_fixed_points = find_unique_fixed_points(map=standard_map, modulo=modulo)
 # use map_fixed_points and find fixed points.
 unique_fixed_points_array = map_fixed_points(grid, step=step_NM, k=k)
 # use expand_fixed_points to generate expanded list of fixed points as well as corresponding colour array.
@@ -44,7 +43,7 @@ fixed_point_index_grid = apply_finder_to_grid(map=standard_map, modulo=modulo,
                                               step=step_NM, 
                                               startpoints=starts, x_points=1000, y_points=1000, 
                                               fixedpoints=expanded_fixed_points, 
-                                              Niter=15, 
+                                              Niter=10, 
                                               k=k)
 # replace each index with rgb value.
 colour_grid = assign_colours_to_grid(fixed_point_index_grid, colour_array)
@@ -54,32 +53,17 @@ plt.imshow(colour_grid, origin = 'lower', extent=(0, 1, 0, 1))
 ##########################
 
 
-###################################
-## PLOT FIXED POINT TRAJECTORIES ##
-###################################
-from methods import fixed_point_trajectory
-starts = linear_starting_points((0.6,0.08), (0.9, 0.08), npoints=4)
-steps = fixed_point_trajectory(xy=starts, 
-                               map=standard_map, modulo=modulo,
-                               step=step_NM, 
-                               niter=1,
-                               k=k)
+###########################
+## PLOT POINCARE SECTION ##
+###########################
+line = linear_starting_points((0,0), (1,1), 500)
+poincare = calculate_poincare_section(starts=line, niter=10000, map=standard_map, modulo=modulo, k=k)
+for i in range(poincare.shape[0]):
+    plt.scatter(poincare[i,0,:], poincare[i,1,:], 
+                color='black', s=0.0001, marker ='.')
+###########################
+###########################
 
-cmap = colormaps['PiYG']
-colors = cmap(np.linspace(0, 1, steps.shape[0]))
-
-for j in range(steps.shape[0]): # for each fixed point
-    for i in range(steps.shape[2]): # for each line segment
-        plt.plot(steps[j, 0, i:i+2], steps[j, 1, i:i+2],
-                color='blue',
-                ms=10, marker ='.', markerfacecolor=colors[j], markeredgecolor='blue')
-###################################
-###################################
-
-plt.xlabel(r'$\theta$')
-plt.ylabel(r'$p$')
-plt.title(f'NM to find fixed points of 2-cycle. k={k}.')
-#plt.xlim([0, 1])
-#plt.ylim([0, 1])
-plt.tight_layout
+plt.xlim([0,1])
+plt.ylim([0,1])
 plt.show()
