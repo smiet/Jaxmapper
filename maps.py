@@ -113,12 +113,12 @@ def standard_map_modulo(xy):
     theta = xy[0]
     p=xy[1]
 
-    theta = np.mod(theta, 1)
-    p = np.mod(p, 1)
+    theta = np.mod(np.mod(theta, 1), 1)
+    p = np.mod(np.mod(p, 1), 1)
     return np.array([theta, p])
 
 @jit
-def standard_map_theta_modulo(xy):
+def standard_map_theta_modulo(xy):  
     """
     Converts theta to theta mod 1. p remains unchanged.
     """

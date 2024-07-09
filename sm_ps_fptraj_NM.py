@@ -12,9 +12,12 @@ import numpy as onp
 from tests import run_test
 from maps import standard_map, sym_standard_map, sym_jac_func, Nmap
 from maps import standard_map_modulo as modulo
+from maps import standard_map_theta_modulo as no_p_mod
 from methods import grid_starting_points, linear_starting_points, step_NM
 
 k=0.5
+
+map2 = Nmap(standard_map, 2)
 
 ###########################
 ## PLOT POINCARE SECTION ##
@@ -35,8 +38,8 @@ for i in range(poincare.shape[0]):
 from methods import fixed_point_trajectory
 starts = linear_starting_points((0.6,0.08), (0.9, 0.08), npoints=4)
 steps = fixed_point_trajectory(xy=starts, 
-                               map=standard_map, modulo=modulo,
-                               step=step_NM, 
+                               map=map2, map_modulo=modulo,
+                               step=step_NM, step_modulo=no_p_mod,
                                niter=50,
                                k=k)
 
@@ -46,8 +49,10 @@ colors = cmap(np.linspace(0, 1, steps.shape[0]))
 for j in range(steps.shape[0]): # for each fixed point
     for i in range(steps.shape[2]): # for each line segment
         plt.plot(steps[j, 0, i:i+2], steps[j, 1, i:i+2],
-                color='blue',
-                ms=10, marker ='.', markerfacecolor=colors[j], markeredgecolor='blue')
+                color=colors[j],
+                ms=5, marker ='o', markerfacecolor=colors[j], markeredgecolor=colors[j])
+    plt.scatter(steps[j,0,0], steps[j,1,0], s=100, marker='.', color=colors[j])
+    plt.scatter(steps[j,0,-1], steps[j,1,-1], s=100, marker='x', color='cyan')
 ###################################
 ###################################
 

@@ -183,19 +183,24 @@ def step_TNM(map, modulo):
     modulo: function
         modulo linked to the map
     """
-    map_isotrope = isotrope(map)
+    map_isotrope = isotrope(map, modulo)
     def step(xy, **kwargs):
         """
         Function which returns the step from xy towards the fixed point (to first order).
         """
         delta = map_isotrope(xy, **kwargs)
         length = np.linalg.norm(delta)
-        if length > 0:
-            delta = (1/length)**2 * delta
-            return delta
-        elif length == 0:
-            return np.array([0,0])
+        delta = (1/length)**2 * delta
+        return np.nan_to_num(delta)
     return jit(step)
+
+def step_LBFGS(map, modulo):
+    # test = mapping_vector(basecase)
+    # length = lambda xy: np.linalg.norm(test(xy))
+    # jac = jacfwd(length)
+    # test2 = optimize.minimize(length, np.array([-0.5, -0.1]), method='L-BFGS-B', jac=jac)
+    # print(test2)
+    pass
 
 def fixed_point_finder(map, map_modulo, step, step_modulo, Niter):
     """
@@ -247,35 +252,30 @@ def mapping_vector(map, modulo):
         return vec
     return jit(diff)
 
-def theta(map):
+def theta(map, modulo):
     """
     Takes as input a map.
     Outputs a function which accepts xy and kwargs as input. This function calculates the angle between map(xy)-xy and the horizontal.
     """
-    mapping_vector_fun = mapping_vector(map, no_modulo)
+    mapping_vector_fun = mapping_vector(map, modulo)
     def final(xy, **kwargs):
         x, y = mapping_vector_fun(xy, **kwargs)
         return np.arctan2(y, x)
     return jit(final)
 
-def isotrope(map):
+def isotrope(map, modulo):
     """
     Takes a mapping_vector function as input.
     Outputs a function which calculates the isotrope of xy given a certain map.
     Isotrope: Direction in which mapping vector doesn't change
     """
-    map_theta = theta(map)
+    map_theta = theta(map, modulo)
     def step(xy, **kwargs):
         rolled_theta = lambda xy: map_theta(xy, **kwargs)
         dtheta = grad(rolled_theta, argnums=0)
-        x = dtheta(xy)[0]
-        y = dtheta(xy)[1]
-        if math.isnan(x) == True or math.isnan(y) == True:
-            return np.array([0.,0.])
-        else:
-            return np.array([[0,1],[-1,0]]) @ dtheta(xy)
-    # NOTE: CANT JIT, NOT SURE WHY
-    return step
+        final = np.array([[0,1],[-1,0]]) @ np.nan_to_num(dtheta(xy))
+        return final
+    return jit(step)
 
 def test_isotrope(map):
     """
@@ -309,14 +309,14 @@ def theta_comparison(map):
         return new_theta - old_theta
     return final
 
-def find_unique_fixed_points(map, map_modulo):
+def find_unique_fixed_points(map, map_modulo, Niter):
     """
     Returns a function which returns an array containing the fixed points of the map.
     Array is of shape (ij) where i indexes the fixed points and j indexes the x/y-value.
     """
     def final(grid, step, step_modulo, **kwargs):
         # initialise fixed point finder function. higher niter to ensure accuracy.
-        map_fixed_point_finder = fixed_point_finder(map, map_modulo, step, step_modulo, Niter=50)
+        map_fixed_point_finder = fixed_point_finder(map, map_modulo, step, step_modulo, Niter=Niter)
         # roll in kwargs for map_fixed_point_finder.
         rolled_fixed_point_finder = lambda xy: map_fixed_point_finder(xy, **kwargs)
         # vmap map_fixed_point_finder.

@@ -22,36 +22,34 @@ from methods import newton_fractal
 from maps import standard_map_modulo as modulo
 from maps import standard_map_theta_modulo as no_p_mod
 
-starts = grid_starting_points(xy_start=(-1,-1), xy_end=(1,1), x_points=10, y_points=10)
+from plotting import expand_fixed_points
+
+starts = grid_starting_points(xy_start=(0,0), xy_end=(1,1), x_points=10, y_points=10)
 line = linear_starting_points(xy_start=(0.5,0), xy_end=(0.5,1), npoints=500)
 # starts2 = linear_starting_points(xy_start=(0.6,0), xy_end=(0.6,1), npoints=1000)
 # starts3 = linear_starting_points(xy_start=(0.4,0), xy_end=(0.4,1), npoints=1000)
 # starts = np.append(starts1, starts2, axis=0)
 # starts = np.append(starts, starts3, axis=0)
 
-#map2 = Nmap(standard_map, 2)
-
-#point = np.array([-0.1, 0.4])
-
-#test = step_NM(map2)
-#test = apply_step(step_NM(map2), modulo)
-
-#print(test(point, k=0.5))
+map2 = Nmap(standard_map, 2)
 
 k=1
 
-map2 = Nmap(standard_map, 2)
-
-test = find_unique_fixed_points(basecase, no_modulo)
-test2 = test(starts, step_NM, no_modulo)
-print(test2)
-
-
-# test = mapping_vector(basecase)
-# length = lambda xy: np.linalg.norm(test(xy))
-# jac = jacfwd(length)
-# test2 = optimize.minimize(length, np.array([-0.5, -0.1]), method='L-BFGS-B', jac=jac)
+test = find_unique_fixed_points(map2, modulo)
+test2 = test(starts, step_NM, no_p_mod, k=k)
 # print(test2)
+
+test3 = fixed_point_finder(map2, modulo, step_TNM, modulo, 70)
+rolled_test3 = lambda xy: test3(xy, k=k)
+vmapped_test3 = vmap(rolled_test3, in_axes=0)
+test4 = vmapped_test3(starts)
+
+plt.scatter(test2[:, 0], test2[:,1 ], s = 30, color='black')
+plt.scatter(test4[:, 0], test4[:, 1], s = 10, color='red')
+
+plt.xlim([0,1])
+plt.ylim([0,1])
+plt.show()
 
 
 #TODO: find a fix for sympy mod issue (or ask chris if sympy can be abandoned)
