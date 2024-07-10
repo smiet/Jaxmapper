@@ -1,0 +1,67 @@
+from jax import numpy as np
+from jax import jit, grad, jacfwd, vmap, jacobian
+from jax.tree_util import Partial
+from jax import config
+import sympy as sym
+config.update("jax_enable_x64", True)
+
+from matplotlib import pyplot as plt
+from matplotlib import colormaps
+import numpy as onp
+
+from tests import run_test
+from maps import standard_map, sym_standard_map, sym_jac_func, Nmap, no_modulo
+from maps import standard_map_modulo as modulo
+from maps import standard_map_theta_modulo as no_p_mod
+from maps import original_standard_map as sm
+from methods import grid_starting_points, linear_starting_points, step_NM, step_TNMx,step_TNMo
+
+k=0.5
+
+map2 = Nmap(standard_map, 2)
+
+###########################
+## PLOT POINCARE SECTION ##
+###########################
+from methods import calculate_poincare_section
+line = linear_starting_points(xy_start=(0,0), xy_end=(1,1), npoints=500)
+poincare = calculate_poincare_section(starts=line, niter=10000, map=standard_map, modulo=modulo, k=k)
+for i in range(poincare.shape[0]):
+    plt.scatter(poincare[i,0,:], poincare[i,1,:], 
+                color='black', s=0.0001, marker ='.')
+###########################
+###########################
+
+
+#########################################################################################################
+##################################### PLOT FIXED POINT TRAJECTORIES #####################################
+#########################################################################################################
+from methods import fixed_point_trajectory
+starts = grid_starting_points((0.2, 0.95), (0.3, 1), x_points=3, y_points=3)
+steps = fixed_point_trajectory(xy=starts, 
+                               map=map2, map_modulo=modulo,
+                               step=step_TNMx, step_modulo=modulo,
+                               niter=1,
+                               k=k)
+
+cmap = colormaps['gist_rainbow']
+colors = cmap(np.linspace(0, 1, steps.shape[0]))
+
+for j in range(steps.shape[0]): # for each fixed point
+    for i in range(steps.shape[2]): # for each line segment
+        plt.plot(steps[j, 0, i:i+2], steps[j, 1, i:i+2],
+                color=colors[j],
+                ms=5, marker ='o', markerfacecolor=colors[j], markeredgecolor=colors[j])
+    plt.scatter(steps[j,0,0], steps[j,1,0], s=100, marker='.', color=colors[j])
+    plt.scatter(steps[j,0,-1], steps[j,1,-1], s=100, marker='x', color='cyan')
+#########################################################################################################
+#########################################################################################################
+
+plt.xlabel(r'$\theta$')
+plt.ylabel(r'$p$')
+plt.title(f'TNM to find fixed points of 2-cycle. k={k}.')
+plt.xlim([0, 1])
+plt.ylim([0, 1])
+plt.tight_layout
+plt.show()
+# plt.savefig('sm2_ps_fptraj_TNM.pdf', bbox_inches='tight')

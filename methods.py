@@ -173,7 +173,7 @@ def step_NM_sym(map):
         return delta
     return step
 
-def step_TNM(map, modulo):
+def step_TNMx(map, modulo):
     """
     Outputs a function 'step' which takes in xy and **kwargs of map, and outputs a Topological Newton step for xy towards a fixed point.
     
@@ -192,6 +192,27 @@ def step_TNM(map, modulo):
         length = np.linalg.norm(delta)
         delta = (1/length)**2 * delta
         return np.nan_to_num(delta)
+    return jit(step)
+
+def step_TNMo(map, modulo):
+    """
+    Outputs a function 'step' which takes in xy and **kwargs of map, and outputs a Topological Newton step for xy towards a fixed point.
+    
+    Parameters:
+    map: function
+        map to calculate the Newton step of
+    modulo: function
+        modulo linked to the map
+    """
+    map_isotrope = isotrope(map, modulo)
+    def step(xy, **kwargs):
+        """
+        Function which returns the step from xy towards the fixed point (to first order).
+        """
+        delta = map_isotrope(xy, **kwargs)
+        length = np.linalg.norm(delta)
+        delta = (1/length)**2 * delta
+        return np.nan_to_num(-delta)
     return jit(step)
 
 def step_LBFGS(map, modulo):
