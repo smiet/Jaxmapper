@@ -33,14 +33,11 @@ for i in range(poincare.shape[0]):
 ##################################################################################################################
 ############################################## PLOT NEWTONS FRACTAL ##############################################
 ##################################################################################################################
-from methods import find_unique_fixed_points, step_NM, step_TNM, apply_finder_to_grid
+from methods import find_unique_fixed_points, step_NM, step_AGTNMx, apply_finder_to_grid
 from plotting import expand_fixed_points, assign_colours_to_grid
-# initialise grid to find fixed points.
-grid = grid_starting_points(xy_start=(0,0), xy_end=(1,1), x_points=100, y_points=100)
-# initialise function to find fixed points.
-map_fixed_points = find_unique_fixed_points(map=standard_map, map_modulo=modulo, Niter=50)
-# use map_fixed_points and find fixed points.
-unique_fixed_points_array = map_fixed_points(grid, step=step_NM, step_modulo=no_p_mod, k=k)
+# load fixed points from groundtruth.py.
+from groundtruth import sm1_fixed_points
+unique_fixed_points_array = sm1_fixed_points
 # use expand_fixed_points to generate expanded list of fixed points as well as corresponding colour array.
 expanded_fixed_points, colour_array = expand_fixed_points(fixed_points=unique_fixed_points_array,
                                                           x_min=0, x_max=1,
@@ -66,12 +63,10 @@ plt.imshow(colour_grid, origin = 'lower', extent=(0, 1, 0, 1))
 ###################################################################################################################
 ################################################ PLOT FIXED POINTS ################################################
 ###################################################################################################################
-from methods import find_unique_fixed_points
-grid = grid_starting_points(xy_start=(0,0), xy_end=(1,1), x_points=100, y_points=100)
-map_fixed_points = find_unique_fixed_points(map=standard_map, map_modulo=modulo, Niter=50)
-# use lambda to roll in the kwargs
-unique_fixed_points = map_fixed_points(grid, step=step_NM, step_modulo=no_p_mod, k=k)
-expanded_fixed_points, colour_array = expand_fixed_points(fixed_points=unique_fixed_points,
+# load fixed points from groundtruth.py.
+from groundtruth import sm1_fixed_points
+unique_fixed_points_array = sm1_fixed_points
+expanded_fixed_points, colour_array = expand_fixed_points(fixed_points=unique_fixed_points_array,
                                                           x_min=0, x_max=1,
                                                           y_min=0, y_max=1)
 colour_list = (colour_array/255).tolist()
@@ -81,9 +76,9 @@ plt.scatter(expanded_fixed_points[:, 0], expanded_fixed_points[:, 1], facecolors
 ###################################################################################################################
 
 
-#########################################################################################################
-##################################### PLOT FIXED POINT TRAJECTORIES #####################################
-#########################################################################################################
+###################################################################################################################
+########################################## PLOT FIXED POINT TRAJECTORIES ##########################################
+###################################################################################################################
 from methods import fixed_point_trajectory
 starts = onp.random.rand(4,2)
 steps = fixed_point_trajectory(xy=starts, 
@@ -102,5 +97,5 @@ for j in range(steps.shape[0]): # for each fixed point
                 ms=5, marker ='o', markerfacecolor=colors[j], markeredgecolor=colors[j])
     plt.scatter(steps[j,0,0], steps[j,1,0], s=100, marker='.', color=colors[j])
     plt.scatter(steps[j,0,-1], steps[j,1,-1], s=100, marker='x', color='cyan')
-#########################################################################################################
-#########################################################################################################
+###################################################################################################################
+###################################################################################################################

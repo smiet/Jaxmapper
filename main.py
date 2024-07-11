@@ -15,7 +15,7 @@ import math
 from tests import run_test
 from maps import standard_map, sym_standard_map, sym_jac_func, Nmap, basecase, no_modulo
 from methods import grid_starting_points, linear_starting_points, calculate_poincare_section
-from methods import step_NM, step_TNMx, apply_step, fixed_point_finder, fixed_point_trajectory, find_unique_fixed_points
+from methods import step_NM, step_AGTNMx, apply_step, fixed_point_finder, fixed_point_trajectory, find_unique_fixed_points
 from methods import theta, test_isotrope, isotrope, theta_comparison
 from methods import newton_fractal
 
@@ -30,14 +30,6 @@ line = linear_starting_points(xy_start=(0.5,0), xy_end=(0.5,1), npoints=500)
 # starts3 = linear_starting_points(xy_start=(0.4,0), xy_end=(0.4,1), npoints=1000)
 # starts = np.append(starts1, starts2, axis=0)
 # starts = np.append(starts, starts3, axis=0)
-
-map2 = Nmap(standard_map, 2)
-
-k=1
-
-from methods import step_LBFGS
-
-xy = np.array([0.1, 0.4])
 
 
 
