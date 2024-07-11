@@ -4,12 +4,14 @@ from jax.tree_util import Partial
 from jax import config
 import sympy as sym
 import math
+from scipy.optimize import minimize
 config.update("jax_enable_x64", True)
 
 from matplotlib import pyplot as plt
 import numpy as onp
 
 from maps import Nmap, sym_jac_func, no_modulo
+from maps import standard_map_theta_modulo as no_p_mod
 
 def calculate_poincare_section(starts, niter, map, modulo, **kwargs):
     """
@@ -173,10 +175,11 @@ def step_NM_sym(map):
         return delta
     return step
 
-def step_TNMx(map, modulo):
+def step_AGTNMx(map, modulo):
     """
-    Outputs a function 'step' which takes in xy and **kwargs of map, and outputs a Topological Newton step for xy towards a fixed point.
-    
+    Outputs a function 'step' which takes in xy and **kwargs of map, and outputs a Topological Newton step for xy towards a fixed x-point.
+    Step length is determined by magnitude of gradient of theta.
+
     Parameters:
     map: function
         map to calculate the Newton step of
@@ -194,10 +197,11 @@ def step_TNMx(map, modulo):
         return np.nan_to_num(delta)
     return jit(step)
 
-def step_TNMo(map, modulo):
+def step_AGTNMo(map, modulo):
     """
-    Outputs a function 'step' which takes in xy and **kwargs of map, and outputs a Topological Newton step for xy towards a fixed point.
-    
+    Outputs a function 'step' which takes in xy and **kwargs of map, and outputs a Topological Newton step for xy towards a fixed o-point.
+    Step length is determined by magnitude of gradient of theta.
+
     Parameters:
     map: function
         map to calculate the Newton step of
@@ -215,13 +219,113 @@ def step_TNMo(map, modulo):
         return np.nan_to_num(-delta)
     return jit(step)
 
+def step_OTNMx(map, modulo):
+    """
+    Outputs a function 'step' which takes in xy and **kwargs of map, and outputs an Optimised Topological Newton step for xy towards a fixed x-point.
+    
+    Parameters:
+    map: function
+        map to calculate the Newton step of
+    modulo: function
+        modulo linked to the map
+    """
+    map_isotrope = isotrope(map, modulo)
+    def step(xy, **kwargs):
+        """
+        Function which returns the step from xy towards the fixed point (to first order).
+        """
+        delta = map_isotrope(xy, **kwargs)
+        unit_delta = delta / np.linalg.norm(delta)
+        difference_vector = mapping_vector(map, no_p_mod)
+        length = lambda xy: np.linalg.norm(difference_vector(xy, **kwargs))
+        grad_length = grad(length)(xy)
+        scaling = (length(xy))/abs(np.dot(grad_length, unit_delta))
+        return np.nan_to_num(scaling * unit_delta)
+    return jit(step)
+
+def step_LGTNMx(map, modulo):
+    """
+    Outputs a function 'step' which takes in xy and **kwargs of map, and outputs a Topological Newton step for xy towards a fixed x-point.
+    Step length is determined by distance between f(xy) and xy.
+
+    Parameters:
+    map: function
+        map to calculate the Newton step of
+    modulo: function
+        modulo linked to the map
+    """
+    map_isotrope = isotrope(map, modulo)
+    def step(xy, **kwargs):
+        """
+        Function which returns the step from xy towards the fixed point (to first order).
+        """
+        delta = map_isotrope(xy, **kwargs)
+        unit_delta = delta / np.linalg.norm(delta)
+
+        length = lambda xy: modded_length(xy, no_p_mod(map(xy, **kwargs)), xmod=1, ymod=1)
+        grad_length = grad(length)(xy)
+
+        scaling = (length(xy))/abs(np.dot(grad_length, unit_delta))
+        return np.nan_to_num(scaling * unit_delta)
+    return jit(step)
+
+def step_LGTNMo(map, modulo):
+    """
+    Outputs a function 'step' which takes in xy and **kwargs of map, and outputs a Topological Newton step for xy towards a fixed x-point.
+    Step length is determined by distance between f(xy) and xy.
+    
+    Parameters:
+    map: function
+        map to calculate the Newton step of
+    modulo: function
+        modulo linked to the map
+    """
+    map_isotrope = isotrope(map, modulo)
+    def step(xy, **kwargs):
+        """
+        Function which returns the step from xy towards the fixed point (to first order).
+        """
+        delta = map_isotrope(xy, **kwargs)
+        unit_delta = delta / np.linalg.norm(delta)
+
+        length = lambda xy: modded_length(xy, no_p_mod(map(xy, **kwargs)), xmod=1, ymod=1)
+        grad_length = grad(length)(xy)
+
+        scaling = (length(xy))/abs(np.dot(grad_length, unit_delta))
+        return np.nan_to_num(-scaling * unit_delta)
+    return jit(step)
+
+def modulo_add(xmod, ymod):
+    """
+    Outputs a 9x2 array where the first axis indexes the step to the modulo brother and the second axis indexes the x/y-value.
+
+    Parameters:
+    xmod: int
+        modulo for x coordinate (put large value if no modulo)
+    ymod: int
+        modulo for y coordinate (put large value if no modulo)
+    """
+    x_direction = np.array([-xmod,0,xmod])
+    y_direction = np.array([-ymod,0,ymod])
+    test2 = np.array(np.meshgrid(x_direction, y_direction))
+    return test2.T.reshape(-1,2)
+
+def modded_length(xy1, xy2, xmod, ymod):
+    """
+    Calculates the xmallest length between 2 points where the modulo brothers of the second point are considered.
+    """
+    modulo_steps = modulo_add(xmod, ymod)
+    length_array = np.linalg.norm(xy1[None, :] - (xy2[None, :] + modulo_steps), axis=-1)
+    return np.min(length_array)
+
 def step_LBFGS(map, modulo):
-    # test = mapping_vector(basecase)
-    # length = lambda xy: np.linalg.norm(test(xy))
-    # jac = jacfwd(length)
-    # test2 = optimize.minimize(length, np.array([-0.5, -0.1]), method='L-BFGS-B', jac=jac)
-    # print(test2)
-    pass
+    def step(xy, **kwargs):
+        difference_vector = mapping_vector(map, modulo)
+        length = lambda xy: np.linalg.norm(difference_vector(xy, **kwargs))
+        grad_length = jacfwd(length)
+        result = minimize(fun=length, x0=xy, method='L-BFGS-B', jac=grad_length)
+        return result
+    return step
 
 def fixed_point_finder(map, map_modulo, step, step_modulo, Niter):
     """

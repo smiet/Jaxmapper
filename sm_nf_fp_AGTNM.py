@@ -25,7 +25,7 @@ map2 = Nmap(standard_map, 2)
 ##################################################################################################################
 ############################################## PLOT NEWTONS FRACTAL ##############################################
 ##################################################################################################################
-from methods import find_unique_fixed_points, step_NM, step_TNMx, apply_finder_to_grid
+from methods import find_unique_fixed_points, step_NM, step_AGTNMx, apply_finder_to_grid
 from plotting import expand_fixed_points, assign_colours_to_grid
 # initialise grid to find fixed points.
 grid = grid_starting_points(xy_start=(0,0), xy_end=(1,1), x_points=100, y_points=100)
@@ -42,7 +42,7 @@ starts = grid_starting_points(xy_start=(0.15,0.85), xy_end=(0.25,0.95),
                               x_points=100, y_points=100)
 # use newton's fractal function to get coordinate array with indices of fixed points as elements.
 fixed_point_index_grid = apply_finder_to_grid(map=map2, map_modulo=modulo, 
-                                              step=step_TNMx, step_modulo=modulo,
+                                              step=step_AGTNMx, step_modulo=modulo,
                                               startpoints=starts, x_points=100, y_points=100, 
                                               fixedpoints=expanded_fixed_points, 
                                               Niter=50, 

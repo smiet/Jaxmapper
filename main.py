@@ -15,7 +15,7 @@ import math
 from tests import run_test
 from maps import standard_map, sym_standard_map, sym_jac_func, Nmap, basecase, no_modulo
 from methods import grid_starting_points, linear_starting_points, calculate_poincare_section
-from methods import step_NM, step_TNM, apply_step, fixed_point_finder, fixed_point_trajectory, find_unique_fixed_points
+from methods import step_NM, step_TNMx, apply_step, fixed_point_finder, fixed_point_trajectory, find_unique_fixed_points
 from methods import theta, test_isotrope, isotrope, theta_comparison
 from methods import newton_fractal
 
@@ -35,21 +35,10 @@ map2 = Nmap(standard_map, 2)
 
 k=1
 
-test = find_unique_fixed_points(map2, modulo)
-test2 = test(starts, step_NM, no_p_mod, k=k)
-# print(test2)
+from methods import step_LBFGS
 
-test3 = fixed_point_finder(map2, modulo, step_TNM, modulo, 70)
-rolled_test3 = lambda xy: test3(xy, k=k)
-vmapped_test3 = vmap(rolled_test3, in_axes=0)
-test4 = vmapped_test3(starts)
+xy = np.array([0.1, 0.4])
 
-plt.scatter(test2[:, 0], test2[:,1 ], s = 30, color='black')
-plt.scatter(test4[:, 0], test4[:, 1], s = 10, color='red')
-
-plt.xlim([0,1])
-plt.ylim([0,1])
-plt.show()
 
 
 #TODO: find a fix for sympy mod issue (or ask chris if sympy can be abandoned)

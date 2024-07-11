@@ -14,7 +14,7 @@ from maps import standard_map, sym_standard_map, sym_jac_func, Nmap, no_modulo
 from maps import standard_map_modulo as modulo
 from maps import standard_map_theta_modulo as no_p_mod
 from maps import original_standard_map as sm
-from methods import grid_starting_points, linear_starting_points, step_NM, step_TNMx,step_TNMo
+from methods import grid_starting_points, linear_starting_points, step_NM, step_TNMx,step_TNMo, step_OTNMx
 
 k=0.5
 
@@ -37,11 +37,11 @@ for i in range(poincare.shape[0]):
 ##################################### PLOT FIXED POINT TRAJECTORIES #####################################
 #########################################################################################################
 from methods import fixed_point_trajectory
-starts = grid_starting_points((0.2, 0.95), (0.3, 1), x_points=3, y_points=3)
+starts = onp.random.rand(20,2)
 steps = fixed_point_trajectory(xy=starts, 
-                               map=map2, map_modulo=modulo,
-                               step=step_TNMx, step_modulo=modulo,
-                               niter=1,
+                               map=standard_map, map_modulo=modulo,
+                               step=step_OTNMx, step_modulo=modulo,
+                               niter=15,
                                k=k)
 
 cmap = colormaps['gist_rainbow']
@@ -53,13 +53,13 @@ for j in range(steps.shape[0]): # for each fixed point
                 color=colors[j],
                 ms=5, marker ='o', markerfacecolor=colors[j], markeredgecolor=colors[j])
     plt.scatter(steps[j,0,0], steps[j,1,0], s=100, marker='.', color=colors[j])
-    plt.scatter(steps[j,0,-1], steps[j,1,-1], s=100, marker='x', color='cyan')
+    plt.scatter(steps[j,0,-1], steps[j,1,-1], s=100, marker='x', color='red')
 #########################################################################################################
 #########################################################################################################
 
 plt.xlabel(r'$\theta$')
 plt.ylabel(r'$p$')
-plt.title(f'TNM to find fixed points of 2-cycle. k={k}.')
+plt.title(f'OTNMx to find fixed points of Standard Map. k={k}.')
 plt.xlim([0, 1])
 plt.ylim([0, 1])
 plt.tight_layout
