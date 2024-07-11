@@ -24,12 +24,20 @@ from maps import standard_map_theta_modulo as no_p_mod
 
 from plotting import expand_fixed_points
 
-starts = grid_starting_points(xy_start=(0,0), xy_end=(1,1), x_points=10, y_points=10)
+starts = grid_starting_points(xy_start=(0,0), xy_end=(1,1), x_points=4, y_points=4)
 line = linear_starting_points(xy_start=(0.5,0), xy_end=(0.5,1), npoints=500)
 # starts2 = linear_starting_points(xy_start=(0.6,0), xy_end=(0.6,1), npoints=1000)
 # starts3 = linear_starting_points(xy_start=(0.4,0), xy_end=(0.4,1), npoints=1000)
 # starts = np.append(starts1, starts2, axis=0)
 # starts = np.append(starts, starts3, axis=0)
+
+k=0.5
+
+from groundtruth import sm1_fixed_points
+from convergence import dmin_against_N
+
+expanded_sm_fixed_points = expand_fixed_points(sm1_fixed_points, 0, 1, 0, 1)[0]
+
 
 
 
