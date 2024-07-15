@@ -34,12 +34,13 @@ line = linear_starting_points(xy_start=(0.5,0), xy_end=(0.5,1), npoints=500)
 k=0.5
 
 from groundtruth import sm1_fixed_points
-from convergence import dmin_against_N
 
-expanded_sm_fixed_points = expand_fixed_points(sm1_fixed_points, 0, 1, 0, 1)[0]
-
+map2 = Nmap(standard_map, 2)
 
 
+# plt.xscale('log')
+plt.yscale('log')
+plt.show()
 
 #TODO: find a fix for sympy mod issue (or ask chris if sympy can be abandoned)
 # F = sym_standard_map(0.5)

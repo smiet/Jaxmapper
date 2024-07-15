@@ -99,3 +99,47 @@ for j in range(steps.shape[0]): # for each fixed point
     plt.scatter(steps[j,0,-1], steps[j,1,-1], s=100, marker='x', color='cyan')
 ###################################################################################################################
 ###################################################################################################################
+
+
+##################################################################################################################
+################################################# DMIN AGAINST N #################################################
+##################################################################################################################
+from convergence import dmin_against_N
+from groundtruth import sm1_fixed_points
+expanded_fixed_points = expand_fixed_points(sm1_fixed_points, 0, 1, 0, 1)[0]
+starts = onp.random.rand(1000, 2)
+
+k=0.5
+N=100
+
+iterations = dmin_against_N(points=starts,
+                            map=standard_map, map_modulo=modulo, 
+                            step=step_NM, step_modulo=no_p_mod, 
+                            max_N=N, fixed_points=expanded_fixed_points,
+                            k=k)
+N_array = np.arange(N+1)
+for i in range(iterations.shape[0]):
+    plt.scatter(N_array, iterations[i, :], color='black', s=1)
+##################################################################################################################
+##################################################################################################################
+
+
+##################################################################################################################
+############################################ MAP DIFFERENCE AGAINST N ############################################
+##################################################################################################################
+from convergence import map_difference_against_N
+starts = onp.random.rand(1000, 2)
+
+k=0.5
+N=20
+
+iterations = map_difference_against_N(points=starts,
+                            map=standard_map, map_modulo=modulo, 
+                            step=step_NM, step_modulo=no_p_mod, 
+                            max_N=N,
+                            k=k)
+N_array = np.arange(N+1)
+for i in range(iterations.shape[0]):
+    plt.scatter(N_array, iterations[i, :], color='black', s=1)
+##################################################################################################################
+##################################################################################################################
