@@ -106,6 +106,7 @@ for j in range(steps.shape[0]): # for each fixed point
 ##################################################################################################################
 from convergence import dmin_against_N
 from groundtruth import sm1_fixed_points
+from plotting import expand_fixed_points
 expanded_fixed_points = expand_fixed_points(sm1_fixed_points, 0, 1, 0, 1)[0]
 starts = onp.random.rand(1000, 2)
 

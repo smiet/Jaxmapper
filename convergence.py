@@ -16,12 +16,12 @@ from tests import run_test
 from maps import standard_map, sym_standard_map, sym_jac_func, Nmap, basecase, no_modulo
 from methods import grid_starting_points, linear_starting_points, calculate_poincare_section
 from methods import step_NM, step_AGTNMx, apply_step, fixed_point_finder, fixed_point_trajectory, find_unique_fixed_points
-from methods import theta, test_isotrope, isotrope, theta_comparison
-from methods import newton_fractal
+from methods import modded_length
 from methods import mapping_vector
 
 from maps import standard_map_modulo as modulo
 from maps import standard_map_theta_modulo as no_p_mod
+
 
 def dmin_against_N(points, map, map_modulo, step, step_modulo, max_N, fixed_points, **kwargs):
     """
@@ -68,12 +68,19 @@ def map_difference_against_N(points, map, map_modulo, step, step_modulo, max_N, 
     # swap axes to make j the last axis.
     iterations = np.swapaxes(iterations, 1, 2)
     
-    map_mapping_vector = mapping_vector(map=map, modulo=map_modulo)
-    rolled_mapping_vector = lambda xy: map_mapping_vector(xy, **kwargs)
-    vmapped_mapping_vector = vmap(vmap(rolled_mapping_vector))
+    # NOTE: HARDCODED XMOD AND YMOD
+    # consider the distance to all modulo brothers of its map and take the smallest one.
+    rolled_modded_length = lambda xy: modded_length(xy, map_modulo(map(xy, **kwargs)), 1, 1)
+    vmapped_modded_length = vmap(vmap(rolled_modded_length))
     # calculate distances from points to their maps in 1 step.
-    distances = np.linalg.norm(vmapped_mapping_vector(iterations), axis=-1)
-    # generate MxN array where first axis indexes point in points, second axis indexes iteration number. each element represents the length of the mapping vector.
+    distances = vmapped_modded_length(iterations)
+
+    # map_mapping_vector = mapping_vector(map=map, modulo=map_modulo)
+    # rolled_mapping_vector = lambda xy: map_mapping_vector(xy, **kwargs)
+    # vmapped_mapping_vector = vmap(vmap(rolled_mapping_vector))
+    # # calculate distances from points to their maps in 1 step.
+    # distances = np.linalg.norm(vmapped_mapping_vector(iterations), axis=-1)
+    
     return distances
 
 def N_against_epsilon(iterations, epsilon_list):

@@ -21,20 +21,21 @@ from maps import standard_map_theta_modulo as no_p_mod
 map2 = Nmap(standard_map, 2)
 
 ##################################################################################################################
-############################################ MAP DIFFERENCE AGAINST N ############################################
+################################################# DMIN AGAINST N #################################################
 ##################################################################################################################
-from convergence import map_difference_against_N
+from convergence import dmin_against_N
+from groundtruth import sm2_fixed_points
+from plotting import expand_fixed_points
+expanded_fixed_points = expand_fixed_points(sm2_fixed_points, 0, 1, 0, 1)[0]
 from groundtruth import starts50 as starts
-
-# starts = np.array([[0.48747675, 0.04207196]])
 
 k=0.5
 N=100
 
-iterations = map_difference_against_N(points=starts,
+iterations = dmin_against_N(points=starts,
                             map=map2, map_modulo=modulo, 
-                            step=step_NM, step_modulo=no_p_mod, 
-                            max_N=N,
+                            step=step_LGTNMx, step_modulo=modulo, 
+                            max_N=N, fixed_points=expanded_fixed_points,
                             k=k)
 N_array = np.arange(N+1)
 for i in range(iterations.shape[0]):
@@ -45,20 +46,10 @@ for i in range(iterations.shape[0]):
 ##################################################################################################################
 
 plt.xlabel('N')
-plt.ylabel('f(x)-x')
+plt.ylabel('dmin')
 
 plt.ylim(1E-16, 1E1)
 
 plt.xscale('log')
 plt.yscale('log')
 plt.show()
-
-# print(iterations[0,:])
-
-# from methods import fixed_point_trajectory
-
-# print(starts[0,:])
-
-# test = fixed_point_trajectory(starts, map2, modulo, step_LGTNMx, modulo, N, k=k)
-# print(test[0,:,:].swapaxes(0,1))
-

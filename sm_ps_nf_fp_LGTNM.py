@@ -13,7 +13,7 @@ from tests import run_test
 from maps import standard_map, sym_standard_map, sym_jac_func, Nmap, no_modulo
 from maps import standard_map_modulo as modulo
 from maps import standard_map_theta_modulo as no_p_mod
-from maps import original_standard_map as sm
+from maps import standard_map as sm
 from methods import grid_starting_points, linear_starting_points, step_NM, step_LGTNMx,step_LGTNMo
 
 k=0.5
@@ -83,9 +83,9 @@ plt.scatter(expanded_fixed_points[:, 0], expanded_fixed_points[:, 1], facecolors
 
 plt.xlabel(r'$\theta$')
 plt.ylabel(r'$p$')
-plt.title(f'OOTNMx to find fixed points of 2-Map. k={k}.')
+plt.title(f'NM to find fixed points of 2-Map. k={k}.')
 plt.xlim([0, 1])
 plt.ylim([0, 1])
 plt.tight_layout
-plt.show()
-# plt.savefig('sm2_ps_nf_fp_OOTNMx.png', bbox_inches='tight', dpi=300)
+# plt.show()
+plt.savefig('sm2_ps_nf_fp_LGTNMx.pdf', bbox_inches='tight', dpi=300)

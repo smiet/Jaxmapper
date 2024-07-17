@@ -15,7 +15,7 @@ import math
 from tests import run_test
 from maps import standard_map, sym_standard_map, sym_jac_func, Nmap, basecase, no_modulo
 from methods import grid_starting_points, linear_starting_points, calculate_poincare_section
-from methods import step_NM, step_AGTNMx, apply_step, fixed_point_finder, fixed_point_trajectory, find_unique_fixed_points
+from methods import step_NM, step_LGTNMx, apply_step, fixed_point_finder, fixed_point_trajectory, find_unique_fixed_points
 from methods import theta, test_isotrope, isotrope, theta_comparison
 from methods import newton_fractal
 
@@ -32,15 +32,23 @@ line = linear_starting_points(xy_start=(0.5,0), xy_end=(0.5,1), npoints=500)
 # starts = np.append(starts, starts3, axis=0)
 
 k=0.5
+start = np.array([1.45426592e-09, 4.99999996e-01])
+sm2 = Nmap(standard_map, 2)
+from methods import modulo_add
 
-from groundtruth import sm1_fixed_points
+end = modulo(sm2(start, k=k))
+# print(end)
+# NOTE: HARDCODED FOR STANDARD MAP
+modulo_steps = modulo_add(1, 1)
+modulo_brothers_of_end = end[None, :] + modulo_steps
+# print(modulo_brothers_of_end)
+length_array = np.linalg.norm(start[None, :] - modulo_brothers_of_end, axis=-1)
+min_position = np.argmin(length_array)
+# print(min_position)
+print(modulo_brothers_of_end[min_position] - start)
 
-map2 = Nmap(standard_map, 2)
 
 
-# plt.xscale('log')
-plt.yscale('log')
-plt.show()
 
 #TODO: find a fix for sympy mod issue (or ask chris if sympy can be abandoned)
 # F = sym_standard_map(0.5)

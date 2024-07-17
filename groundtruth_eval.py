@@ -5,6 +5,8 @@ from jax import config
 import sympy as sym
 config.update("jax_enable_x64", True)
 
+np.set_printoptions(precision=15)
+
 from matplotlib import pyplot as plt
 from matplotlib import colormaps
 import numpy as onp
@@ -46,6 +48,9 @@ print(round2_fixed_points)
 map_mapping_vector = mapping_vector(map=map, modulo=map_modulo)
 rolled_mapping_vector = lambda xy: map_mapping_vector(xy, k=k)
 vmapped_mapping_vector = vmap(rolled_mapping_vector)
-print(vmapped_mapping_vector(round2_fixed_points))
+# print(vmapped_mapping_vector(round2_fixed_points))
 
-
+# generate N random points
+N = 50
+starts = onp.random.rand(N, 2)
+# print(starts)

@@ -37,20 +37,21 @@ for i in range(poincare.shape[0]):
 ##################################### PLOT FIXED POINT TRAJECTORIES #####################################
 #########################################################################################################
 from methods import fixed_point_trajectory
-starts = onp.random.rand(50,2)
+from groundtruth import starts50 as starts
+starts = np.array([[1.45426592e-09, 4.99999996e-01]])
 steps = fixed_point_trajectory(xy=starts, 
                                map=map2, map_modulo=modulo,
                                step=step_LGTNMx, step_modulo=modulo,
-                               niter=15,
+                               niter=80,
                                k=k)
 
 cmap = colormaps['gist_rainbow']
 colors = cmap(np.linspace(0, 1, steps.shape[0]))
 
-for j in range(steps.shape[0]): # for each fixed point
+for j in range(steps.shape[0]): # for each point
     for i in range(steps.shape[2]): # for each line segment
         plt.plot(steps[j, 0, i:i+2], steps[j, 1, i:i+2],
-                color=colors[j],
+                color='blue',
                 ms=5, marker ='o', markerfacecolor=colors[j], markeredgecolor=colors[j])
     plt.scatter(steps[j,0,0], steps[j,1,0], s=100, marker='.', color=colors[j])
     plt.scatter(steps[j,0,-1], steps[j,1,-1], s=100, marker='x', color='red')

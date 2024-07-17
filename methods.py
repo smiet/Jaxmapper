@@ -318,7 +318,7 @@ def modded_length(xy1, xy2, xmod, ymod):
     length_array = np.linalg.norm(xy1[None, :] - (xy2[None, :] + modulo_steps), axis=-1)
     return np.min(length_array)
 
-def step_LBFGS(map, modulo):
+def fixed_pt_traj_LBFGS(map, modulo):
     def step(xy, **kwargs):
         difference_vector = mapping_vector(map, modulo)
         length = lambda xy: np.linalg.norm(difference_vector(xy, **kwargs))
@@ -366,6 +366,39 @@ def fixed_point_trajectory(xy, map, map_modulo, step, step_modulo, niter, **kwar
     # stack into a nice array for returning. 
     return np.stack(iterations, axis=-1)
 
+def fixed_point_steps(xy, map, map_modulo, step, step_modulo, niter, **kwargs):
+    """
+    Takes as input an array of starting points, a map, and a number of iterations.
+    Also takes in a modulo function which is based on the modulo of the input map.
+    Iterates niter points to move the starting points toward fixed points.
+    Returns an array of steps of shape (ijk) where i indexes the point in starts, 
+    j indexes the iteration number (0 is the original point before any steps),
+    and k indexes the x/y value.    
+    """
+
+    step_for_map = step(map, step_modulo)
+    rolled_step = lambda xy: step_for_map(xy, **kwargs)
+    vmapped_step = vmap(rolled_step)
+
+    apply_step_for_map = apply_step(step_for_map, map_modulo)
+    # use lambda to "roll-in" the mapping kwargs
+    rolled_apply_step = lambda xy: apply_step_for_map(xy, **kwargs)
+    # jit rolled_delta
+    applydelta = jit(vmap(rolled_apply_step, in_axes=0))
+    # initialize results array
+    iterations = [xy, ]
+    steps = []
+    # calculate mapping of previous mappings niter times
+    for _ in range(niter):
+        old_point = iterations[-1]
+        new_point = applydelta(old_point)
+        iterations.append(new_point)
+
+        point_step = vmapped_step(old_point)
+        steps.append(point_step)
+    # stack into a nice array for returning. 
+    return np.swapaxes(np.stack(steps, axis=-1), 1, 2)
+
 def mapping_vector(map, modulo):
     """
     Returns a function which calculates the difference between point xy and the modulo of the mapping of xy.
@@ -377,12 +410,32 @@ def mapping_vector(map, modulo):
         return vec
     return jit(diff)
 
+def modded_mapping_vector(map, map_modulo):
+    """
+    Outputs a function which returns the vector between a point and the closest modulo brother of its map.
+
+    Parameters:
+    map: function
+        map that is used
+    map_modulo: function
+        modulo linked to the map
+    """
+    def modded_vector(start, **kwargs):
+        end = map_modulo(map(start, **kwargs))
+        # NOTE: HARDCODED FOR STANDARD MAP
+        modulo_steps = modulo_add(1, 1)
+        modulo_brothers_of_end = end[None, :] + modulo_steps
+        length_array = np.linalg.norm(start[None, :] - modulo_brothers_of_end, axis=-1)
+        min_position = np.argmin(length_array)
+        return modulo_brothers_of_end[min_position] - start
+    return jit(modded_vector)
+
 def theta(map, modulo):
     """
     Takes as input a map.
     Outputs a function which accepts xy and kwargs as input. This function calculates the angle between map(xy)-xy and the horizontal.
     """
-    mapping_vector_fun = mapping_vector(map, modulo)
+    mapping_vector_fun = modded_mapping_vector(map, modulo)
     def final(xy, **kwargs):
         x, y = mapping_vector_fun(xy, **kwargs)
         return np.arctan2(y, x)
@@ -456,7 +509,7 @@ def find_unique_fixed_points(map, map_modulo, Niter):
         #         fixed_points = fixed_points.at[i,:].set(final)
         
         # round fixed points to 5 decimal places.
-        rounded_fixed_points = np.round(fixed_points, 5)
+        rounded_fixed_points = np.round(fixed_points, 10)
         # vmap modulo and apply on rounded fixed points.
         vmapped_modulo = vmap(map_modulo, in_axes=0)
         modded_fixed_points = vmapped_modulo(rounded_fixed_points)
