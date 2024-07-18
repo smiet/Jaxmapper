@@ -114,3 +114,31 @@ def N_against_epsilon(iterations, epsilon_list):
     mask = ~comparison.any(axis=1)
     final = final.at[mask].set(iterations.shape[1])
     return final
+
+def order_of_conv(distances, epsilon):
+    """
+    Returns a 1D array of length M. each point is the ratio of distances for each point just before distance goes beow epsilon.
+
+    Parameters:
+    distances: MxN array
+        array of distances from dmin_against_N or map_difference_against_N.
+    epsilon: float
+        error tolerance.
+    """
+    # generate boolean array where True in boolean_arr indicates that the corresponding element in distances is less than epsilon.
+    boolean_arr = distances < epsilon
+    # generate mask where element in mask is true if corresponding row in boolean_arr contains any True values.
+    mask = boolean_arr.any(axis=1)
+    # use mask to discard rows that do not have distances less than epsilon.
+    distances = distances[mask, :]
+    # regenerate boolean array.
+    boolean_arr = distances < epsilon
+    # generate index array. each element of index_array is the index in the corresponding row of distances where the distance drops below epsilon. 
+    index_array = np.argmax(boolean_arr, axis=-1)
+
+    # generate array of distances 1 step before the distance goes below epsilon.
+    prev_point_array = distances[np.arange(distances.shape[0]), index_array-1]
+    # generate array of distances 2 steps before the distance goes below epsilon.
+    prev_prev_point_array = distances[np.arange(distances.shape[0]), index_array-2]
+
+    return prev_point_array/prev_prev_point_array

@@ -52,7 +52,7 @@ starts = grid_starting_points(xy_start=(0,0), xy_end=(1,1),
                               x_points=1000, y_points=1000)
 # use newton's fractal function to get coordinate array with indices of fixed points as elements.
 fixed_point_index_grid = apply_finder_to_grid(map=map2, map_modulo=modulo, 
-                                              step=step_LGTNMx, step_modulo=modulo,
+                                              step=step_NM, step_modulo=no_p_mod,
                                               startpoints=starts, x_points=1000, y_points=1000, 
                                               fixedpoints=expanded_fixed_points, 
                                               Niter=20, 
@@ -88,4 +88,4 @@ plt.xlim([0, 1])
 plt.ylim([0, 1])
 plt.tight_layout
 # plt.show()
-plt.savefig('sm2_ps_nf_fp_LGTNMx.pdf', bbox_inches='tight', dpi=300)
+plt.savefig('sm2_ps_nf_fp_NM.pdf', bbox_inches='tight', dpi=300)

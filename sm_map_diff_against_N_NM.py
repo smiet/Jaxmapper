@@ -18,7 +18,7 @@ from methods import grid_starting_points, linear_starting_points, step_NM, step_
 from plotting import plot_newtons_fractal, plot_fixed_points
 from maps import standard_map_theta_modulo as no_p_mod
 
-map2 = Nmap(standard_map, 2)
+map10 = Nmap(standard_map, 10)
 
 ##################################################################################################################
 ############################################ MAP DIFFERENCE AGAINST N ############################################
@@ -29,10 +29,10 @@ from groundtruth import starts50 as starts
 # starts = np.array([[0.48747675, 0.04207196]])
 
 k=0.5
-N=100
+N=300
 
 iterations = map_difference_against_N(points=starts,
-                            map=map2, map_modulo=modulo, 
+                            map=map10, map_modulo=modulo, 
                             step=step_NM, step_modulo=no_p_mod, 
                             max_N=N,
                             k=k)

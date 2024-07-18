@@ -31,22 +31,11 @@ line = linear_starting_points(xy_start=(0.5,0), xy_end=(0.5,1), npoints=500)
 # starts = np.append(starts1, starts2, axis=0)
 # starts = np.append(starts, starts3, axis=0)
 
-k=0.5
-start = np.array([1.45426592e-09, 4.99999996e-01])
 sm2 = Nmap(standard_map, 2)
-from methods import modulo_add
-
-end = modulo(sm2(start, k=k))
-# print(end)
-# NOTE: HARDCODED FOR STANDARD MAP
-modulo_steps = modulo_add(1, 1)
-modulo_brothers_of_end = end[None, :] + modulo_steps
-# print(modulo_brothers_of_end)
-length_array = np.linalg.norm(start[None, :] - modulo_brothers_of_end, axis=-1)
-min_position = np.argmin(length_array)
-# print(min_position)
-print(modulo_brothers_of_end[min_position] - start)
-
+# start = np.array([0.03741402,0.99164984])
+start = np.array([0.2, 0.8])
+# start = np.array([2.402584816362410e-01, 9.605169632724807e-01])
+k=0.5
 
 
 

@@ -134,7 +134,7 @@ def step_NM(map, modulo):
         M = jacfwd(rolled_map)(xy)
         A = M - np.eye(2)
         #diff = mapping_vector_modulo(rolled_map, modulo)
-        diff = mapping_vector(rolled_map, modulo)
+        diff = modded_mapping_vector(rolled_map, modulo)
         b = -diff(xy)
         delta = np.linalg.solve(A,b)
         return delta
@@ -318,14 +318,41 @@ def modded_length(xy1, xy2, xmod, ymod):
     length_array = np.linalg.norm(xy1[None, :] - (xy2[None, :] + modulo_steps), axis=-1)
     return np.min(length_array)
 
-def fixed_pt_traj_LBFGS(map, modulo):
-    def step(xy, **kwargs):
-        difference_vector = mapping_vector(map, modulo)
+def fixed_pt_traj_powell(map, modulo):
+    """
+    Returns a function which takes in a point and kwargs for map and outputs the fixed point trajectory.
+
+    Parameters:
+    map: function
+        map to be used.
+    modulo: function
+        modulo to be used.
+    """
+    def traj(xy, **kwargs):
+        """
+        Returns an array of shape (ijk) where i is of length 1, j indexes the x/y value, 
+        and k indexes the iteration number (0 is the original point before any steps).    
+
+        Parameters:
+        xy: 1D array of length 2
+            point to find the trajectory of.
+        """
+        iterations =[xy]
+        def write_to_iter(xk):
+            iterations.append(xk)
+
+        difference_vector = modded_mapping_vector(map, modulo)
         length = lambda xy: np.linalg.norm(difference_vector(xy, **kwargs))
         grad_length = jacfwd(length)
-        result = minimize(fun=length, x0=xy, method='L-BFGS-B', jac=grad_length)
-        return result
-    return step
+        result = minimize(fun=length, x0=xy, method='powell', jac=grad_length,
+                          # NOTE: HARDCODED STANDARD MAP MODULO
+                        #   bounds=((0,1), (0,1)),
+                          callback = write_to_iter,
+                          options={'direc': onp.eye(2)*0.1, 'ftol': 1e-11},
+                          tol = 1e-11)
+        iter_array = np.array(iterations)
+        return np.swapaxes(iter_array, 0,1)[None,:,:], result
+    return traj
 
 def fixed_point_finder(map, map_modulo, step, step_modulo, Niter):
     """
@@ -343,11 +370,23 @@ def fixed_point_finder(map, map_modulo, step, step_modulo, Niter):
 
 def fixed_point_trajectory(xy, map, map_modulo, step, step_modulo, niter, **kwargs):
     """
-    Takes as input an array of starting points, a map, and a number of iterations.
-    Also takes in a modulo function which is based on the modulo of the input map.
-    Iterates niter points to move the starting points toward fixed points.
+    Iterates niter times to move the starting points toward fixed points.
     Returns an array of shape (ijk) where i indexes the point in starts, j indexes the x/y value, 
     and k indexes the iteration number (0 is the original point before any steps).    
+
+    Parameters:
+    xy: Nx2 array
+        array of starting points.
+    map: function
+        map which will be used.
+    map_modulo: function
+        modulo linked to map.
+    step: funtion
+        step which will be used.
+    step_modulo: function
+        modulo linked to step.
+    niter: int
+        number of iterations to run the fixed point algorithm.
     """
 
     step_for_map = step(map, step_modulo)
@@ -573,7 +612,7 @@ def apply_finder_to_grid(map, map_modulo, step, step_modulo, startpoints, x_poin
     Parameters:
     step: function
         step function to be applied to the points in the grid startpoints
-        (genterated from a map and modulo using step_NM f.ex.)
+        (generated from a map and modulo using step_NM f.ex.)
     startpoints: Nx2 array
         grid of starting points
     fixedpoints: Kx2 array
