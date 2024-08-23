@@ -22,10 +22,10 @@ from methods import step_NM, step_AGTNMx, apply_step, fixed_point_finder, mappin
 from maps import standard_map_modulo as modulo
 from maps import standard_map_theta_modulo as no_p_mod
 
-map2 = Nmap(standard_map, 2)
+map5 = Nmap(standard_map, 5)
 
-k=0.5
-map = map2
+k=1.5
+map = map5
 map_modulo = modulo
 step = step_NM
 step_modulo = no_p_mod

@@ -58,8 +58,8 @@ def tokamap_modulo(xy):
 @jit
 def basecase(xy):
     """
-    f(z) = z^3 - 1 (want to find the roots of this)
-    g(z) = z^3 - 1 + z (finding the fixed points of this is equivalent to finding the roots of f)
+    g(z) = z^3 - 1 (want to find the roots of this)
+    f(z) = z^3 - 1 + z (finding the fixed points of this is equivalent to finding the roots of g)
     """
     x = xy[0]
     y = xy[1]

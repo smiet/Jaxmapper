@@ -56,7 +56,7 @@ npoints = 100; len=0.03
 points = np.array([[x_0+len*np.sin(theta), y_0 + len*np.cos(theta)] for theta in np.linspace(0, np.pi*2, npoints)])
 
 from methods import isotrope
-map_isotrope = isotrope(sm2, modulo)
+map_isotrope = isotrope(standard_map, modulo)
 rolled_isotrope = lambda xy: map_isotrope(xy, k=k)
 vmapped_isotrope = vmap(rolled_isotrope)
 
@@ -69,8 +69,6 @@ test2 = np.linalg.norm(test, axis=-1)
 test3 = test/test2[:, None]
 
 plt.quiver(points[:, 0], points[:, 1], test3[:, 0], test3[:, 1])
-
-plt.plot([0, 0.5], [0.5, -0.75])
 
 plt.xlim([-0.04, 0.04])
 plt.ylim([0.46, 0.54])

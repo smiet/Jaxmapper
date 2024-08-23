@@ -318,7 +318,7 @@ def modded_length(xy1, xy2, xmod, ymod):
     length_array = np.linalg.norm(xy1[None, :] - (xy2[None, :] + modulo_steps), axis=-1)
     return np.min(length_array)
 
-def fixed_pt_traj_powell(map, modulo):
+def traj_powell(map, modulo):
     """
     Returns a function which takes in a point and kwargs for map and outputs the fixed point trajectory.
 
@@ -344,15 +344,73 @@ def fixed_pt_traj_powell(map, modulo):
         difference_vector = modded_mapping_vector(map, modulo)
         length = lambda xy: np.linalg.norm(difference_vector(xy, **kwargs))
         grad_length = jacfwd(length)
-        result = minimize(fun=length, x0=xy, method='powell', jac=grad_length,
+        result = minimize(fun=length, x0=xy, method='powell', 
+                        #   jac=grad_length,
                           # NOTE: HARDCODED STANDARD MAP MODULO
-                        #   bounds=((0,1), (0,1)),
+                          bounds=((0,1), (0,1)),
                           callback = write_to_iter,
                           options={'direc': onp.eye(2)*0.1, 'ftol': 1e-11},
                           tol = 1e-11)
         iter_array = np.array(iterations)
-        return np.swapaxes(iter_array, 0,1)[None,:,:], result
+        return np.swapaxes(iter_array, 0,1)[None,:,:]
     return traj
+
+def traj_slsqp(map, modulo):
+    """
+    Returns a function which takes in a point and kwargs for map and outputs the fixed point trajectory.
+
+    Parameters:
+    map: function
+        map to be used.
+    modulo: function
+        modulo to be used.
+    """
+    def traj(xy, **kwargs):
+        """
+        Returns an array of shape (ijk) where i is of length 1, j indexes the x/y value, 
+        and k indexes the iteration number (0 is the original point before any steps).    
+
+        Parameters:
+        xy: 1D array of length 2
+            point to find the trajectory of.
+        """
+        iterations =[xy]
+        def write_to_iter(xk):
+            iterations.append(xk)
+
+        difference_vector = modded_mapping_vector(map, modulo)
+        length = lambda xy: np.linalg.norm(difference_vector(xy, **kwargs))
+        grad_length = jacfwd(length)
+        result = minimize(fun=length, x0=xy, method='SLSQP', 
+                        #   jac=grad_length,
+                          # NOTE: HARDCODED STANDARD MAP MODULO
+                          bounds=((0,1), (0,1)),
+                          callback = write_to_iter,
+                          options={'ftol': 1e-11},
+                          tol = 1e-11)
+        iter_array = np.array(iterations)
+        return np.swapaxes(iter_array, 0,1)[None,:,:]
+    return traj
+
+def fixed_point_trajectory_scipy(xy, map, modulo, traj, **kwargs):
+    apply_minimize = traj(map, modulo)
+
+    traj = apply_minimize(xy[0,:], **kwargs)
+
+    for point in xy:
+        old_traj_length = traj.shape[2]
+        point_traj = apply_minimize(point, **kwargs)
+        point_traj_length = point_traj.shape[2]
+
+        if old_traj_length >= point_traj_length:
+            point_traj = np.pad(point_traj, ((0,0), (0,0), (0, old_traj_length - point_traj_length)), 'edge')
+            traj = np.append(traj, point_traj, axis=0)    
+        
+        else:
+            traj = np.pad(traj, ((0,0), (0,0), (0, point_traj_length - old_traj_length)), 'edge')
+            traj = np.append(traj, point_traj, axis=0)
+
+    return traj[1:, :, :]
 
 def fixed_point_finder(map, map_modulo, step, step_modulo, Niter):
     """

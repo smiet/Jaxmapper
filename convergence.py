@@ -83,6 +83,36 @@ def map_difference_against_N(points, map, map_modulo, step, step_modulo, max_N, 
     
     return distances
 
+def map_difference_against_N_scipy(iterations, map, map_modulo, **kwargs):
+    """
+    Outputs a Q x max_N array where the first axis indexes the point in points 
+    and the second axis indexes the iteration value.
+
+    Parameters:
+    points: Mx2 array
+        Points to perform function on. Ideally random.
+    fixed_points: Kx2 array
+        Array of fixed points. This should be the set of expanded fixed points (so including all modulo brothers).
+    """
+
+    # swap axes to make j the last axis.
+    iterations = np.swapaxes(iterations, 1, 2)
+    
+    # NOTE: HARDCODED XMOD AND YMOD
+    # consider the distance to all modulo brothers of its map and take the smallest one.
+    rolled_modded_length = lambda xy: modded_length(xy, map_modulo(map(xy, **kwargs)), 1, 1)
+    vmapped_modded_length = vmap(vmap(rolled_modded_length))
+    # calculate distances from points to their maps in 1 step.
+    distances = vmapped_modded_length(iterations)
+
+    # map_mapping_vector = mapping_vector(map=map, modulo=map_modulo)
+    # rolled_mapping_vector = lambda xy: map_mapping_vector(xy, **kwargs)
+    # vmapped_mapping_vector = vmap(vmap(rolled_mapping_vector))
+    # # calculate distances from points to their maps in 1 step.
+    # distances = np.linalg.norm(vmapped_mapping_vector(iterations), axis=-1)
+    
+    return distances
+
 def N_against_epsilon(iterations, epsilon_list):
     """
     Outputs an array of size MxK where first axis indexes the point 
